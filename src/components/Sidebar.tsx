@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils';
 
 const getNavItems = (role?: string) => {
   const items = [
-    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/chat', label: 'AI Chat', icon: MessageSquare },
     { href: '/expenses', label: 'Expenses', icon: PieChart },
     { href: '/budget', label: 'Budgets', icon: Target },
