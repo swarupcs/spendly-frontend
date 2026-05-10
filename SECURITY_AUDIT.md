@@ -89,11 +89,117 @@ const res = await fetch(`${BASE_URL}/chat`, {
 
 ---
 
+## Issue #5 — 🟠 HIGH: Auth Store `isAuthenticated` Persisted — Guard Bypass
+
+**File**: `src/store/auth.store.ts`
+
+**Problem**: Zustand `persist` stores `isAuthenticated` boolean in localStorage:
+
+```typescript
+persist(
+  (set, get) => ({ ... }),
+  {
+    name: 'auth-store',
+    partialize: (state) => ({
+      user: state.user,
+      isAuthenticated: state.isAuthenticated, // ← Persisted!
+    }),
+  },
+)
+```
+
+**Risk**: An attacker (or curious user) can manually set `localStorage['auth-store']` to `{"state":{"user":{"id":1,"role":"ADMIN",...},"isAuthenticated":true}}` to:
+- Bypass `ProtectedRoute` guards on initial render (before `hydrate()` validates token)
+- Potentially access admin UI routes and see the admin interface structure
+- While backend calls will fail, the frontend layout/component structure leaks information
+
+**Fix**: 
+- Don't persist `isAuthenticated` — always derive it from valid token presence.
+- Add a loading/splash screen that blocks rendering until `hydrate()` completes server-side validation.
+- Never render admin UI structure without a role-check backed by fresh `/auth/me` response.
+
+---
+
+## Issue #6 — 🟡 MEDIUM: Token Refresh Race Condition Across Tabs
+
+**File**: `src/api/client.ts` (lines 18–40)
+
+**Problem**: The `refreshPromise` singleton prevents duplicate refresh calls within a single tab, but provides no coordination across multiple browser tabs:
+
+```typescript
+let refreshPromise: Promise<boolean> | null = null;
+```
+
+If two tabs simultaneously detect a 401:
+1. Tab A calls refresh → gets new tokens → stores them
+2. Tab B calls refresh with the OLD refresh token → it was already revoked by Tab A → refresh fails
+3. Tab B clears storage and redirects to login — logging the user out everywhere
+
+**Risk**: Multi-tab users get unexpectedly logged out during normal usage.
+
+**Fix**: 
+- Use `BroadcastChannel` API to coordinate refresh across tabs
+- Or use a `localStorage` event listener to detect when tokens are updated by another tab
+- Example: Before refreshing, check if tokens changed since the 401 was received
+
+---
+
+## Issue #7 — 🟡 MEDIUM: No Admin Route Guard on Frontend
+
+**File**: `src/App.tsx`
+
+**Problem**: The `/admin` routes are wrapped in `ProtectedRoute` (auth check) but have no **role-based** guard:
+
+```typescript
+<Route path='/admin' element={<AdminLayout />}>
+  {/* No role check — any authenticated user can see the admin UI */}
+</Route>
+```
+
+**Risk**: While backend API calls require ADMIN role, any authenticated user can navigate to `/admin` and:
+- See the admin dashboard layout/components
+- Observe what admin features exist
+- Attempt to use the UI (requests fail, but reveal API structure)
+
+**Fix**: Add a `RequireRole` wrapper component:
+```typescript
+<Route path='/admin' element={<RequireRole role="ADMIN"><AdminLayout /></RequireRole>}>
+```
+
+---
+
+## Issue #8 — 🟡 LOW: No Request Deduplication on `hydrate()`
+
+**File**: `src/store/auth.store.ts`
+
+**Problem**: The `hydrate()` function has no deduplication guard. If called multiple times (e.g., React StrictMode, concurrent component mounts), it fires multiple `/auth/me` requests:
+
+```typescript
+hydrate: async () => {
+  const token = tokenStorage.getAccess();
+  if (!token || get().isAuthenticated) return; // Only checks current state
+  set({ isLoading: true });
+  // ... fires request
+}
+```
+
+In React 18+ StrictMode, effects run twice in development, potentially causing duplicate network requests.
+
+**Risk**: Minor — wasted requests and potential race between two `hydrate()` calls setting state.
+
+**Fix**: Add a module-level `hydratePromise` to deduplicate concurrent calls.
+
+---
+
 ## Summary Priority Matrix
 
 | # | Severity | Issue | Effort |
 |---|----------|-------|--------|
 | 1 | 🔴 High | localStorage token storage | High (needs backend changes) |
 | 2 | 🟠 High | Duplicate API clients | Medium |
+| 5 | 🟠 High | Auth store guard bypass | Low |
 | 3 | 🟡 Medium | OAuth tokens from URL | Medium (backend coordination) |
 | 4 | 🟡 Medium | No error boundary | Low |
+| 6 | 🟡 Medium | Multi-tab refresh race | Medium |
+| 7 | 🟡 Medium | No admin role guard | Low |
+| 8 | 🟡 Low | Hydrate deduplication | Trivial |
