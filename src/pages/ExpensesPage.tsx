@@ -14,6 +14,7 @@ import {
   Receipt,
   ShieldCheck,
   MessageSquare,
+  Wand2,
 } from 'lucide-react';
 import { ExportDialog } from '@/components/ExportDialog';
 import {
@@ -157,6 +158,23 @@ function ExpenseForm({
         ).toFixed(2)
       : null;
 
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  const handleSuggestCategory = async () => {
+    if (!formData.title && !formData.merchant) return;
+    setIsSuggesting(true);
+    try {
+      const res = await expensesApi.suggestCategory(formData.title, formData.merchant);
+      if (res.success && res.data) {
+        setFormData((p) => ({ ...p, category: res.data!.suggestedCategory }));
+      }
+    } catch (err) {
+      console.error('Failed to suggest category', err);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
   return (
     <form onSubmit={onSubmit} className='space-y-4'>
       {formError && (
@@ -263,9 +281,25 @@ function ExpenseForm({
       {/* Category + Date */}
       <div className='grid grid-cols-2 gap-3'>
         <div className='space-y-1.5'>
-          <Label className='font-mono text-[10px] text-[#8b89b0] uppercase tracking-widest'>
-            Category
-          </Label>
+          <div className='flex items-center justify-between'>
+            <Label className='font-mono text-[10px] text-[#8b89b0] uppercase tracking-widest'>
+              Category
+            </Label>
+            <button
+              type='button'
+              onClick={handleSuggestCategory}
+              disabled={isSuggesting || (!formData.title && !formData.merchant)}
+              className='font-mono text-[9px] flex items-center gap-1 px-1.5 py-0.5 rounded transition-all text-[#00d4ff] hover:bg-[rgba(0,212,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed'
+              title='Auto-categorize with AI'
+            >
+              {isSuggesting ? (
+                <RefreshCw className='w-3 h-3 animate-spin' />
+              ) : (
+                <Wand2 className='w-3 h-3' />
+              )}
+              AI Suggest
+            </button>
+          </div>
           <Select
             value={formData.category}
             onValueChange={(v) =>

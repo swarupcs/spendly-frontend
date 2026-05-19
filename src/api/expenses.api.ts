@@ -208,4 +208,12 @@ export const expensesApi = {
     const qs = params.toString();
     return fetchWithAuth(`${BASE_URL}/expenses/export${qs ? `?${qs}` : ''}`);
   },
+  suggestCategory: (title: string, merchant?: string) =>
+    request<{ suggestedCategory: Category; confidence: string; source: string }>(
+      '/expenses/suggest-category',
+      {
+        method: 'POST',
+        body: JSON.stringify({ title, merchant }),
+      }
+    ),
 };
