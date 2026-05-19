@@ -1,6 +1,7 @@
-import { useExpenseStats, useExpenses } from '@/services/expenses.service';
+import { useExpenses, useExpenseStats } from '@/services/expenses.service';
 import { useBudgetOverview } from '@/services/budget.service';
 import { useGoals } from '@/services/goals.service';
+import { useAnomalies, useDismissAnomaly } from '@/services/anomaly.service';
 import { useAuthStore } from '@/store/auth.store';
 import { useFmt } from '@/hooks/useCurrency';
 import { useMemo, useState } from 'react';
@@ -301,6 +302,8 @@ export default function Dashboard() {
     from,
     to,
   );
+  const { data: anomalies } = useAnomalies();
+  const { mutate: dismissAnomaly } = useDismissAnomaly();
   const { data: expData, isLoading: expLoading } = useExpenses({
     from,
     to,
@@ -462,6 +465,56 @@ export default function Dashboard() {
               </span>
             </span>
           </div>
+
+          {/* ── Anomaly Alerts ── */}
+          {anomalies && anomalies.length > 0 && (
+            <div className='space-y-3'>
+              {anomalies.map((anomaly) => (
+                <div
+                  key={anomaly.id}
+                  className='relative p-4 rounded-xl flex items-start gap-3 border transition-all duration-300'
+                  style={{
+                    background: 'rgba(255,184,48,0.06)',
+                    borderColor: 'rgba(255,184,48,0.2)',
+                    boxShadow: '0 4px 20px rgba(255,184,48,0.05)',
+                  }}
+                >
+                  <div
+                    className='w-8 h-8 rounded-full flex items-center justify-center shrink-0'
+                    style={{ background: 'rgba(255,184,48,0.15)' }}
+                  >
+                    <Sparkles className='w-4 h-4 text-[#ffb830]' />
+                  </div>
+                  <div className='flex-1'>
+                    <div className='flex items-center justify-between mb-1'>
+                      <h4 className='font-display text-[#ffb830] font-semibold text-sm'>
+                        Spending Spike Detected
+                      </h4>
+                      <button
+                        onClick={() => dismissAnomaly(anomaly.id)}
+                        className='text-[#8b89b0] hover:text-[#f0efff] p-1 rounded-md hover:bg-[rgba(255,255,255,0.1)] transition-colors'
+                        title='Dismiss Alert'
+                      >
+                        <X className='w-3.5 h-3.5' />
+                      </button>
+                    </div>
+                    <p className='text-sm text-[#f0efff] leading-relaxed opacity-90'>
+                      {anomaly.explanation}
+                    </p>
+                    <div className='mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[rgba(255,184,48,0.1)] border border-[rgba(255,184,48,0.2)]'>
+                      <span className='font-mono text-[10px] text-[#ffb830] font-medium'>
+                        {anomaly.category}
+                      </span>
+                      <span className='text-[#8b89b0] text-[10px]'>•</span>
+                      <span className='font-mono text-[10px] text-[#ffb830] font-medium'>
+                        +{anomaly.percentage}% vs avg
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* ── Stat Cards ── */}
           <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
