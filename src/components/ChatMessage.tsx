@@ -1342,50 +1342,8 @@ export function ChatMessage({
       </div>
     );
 
-  if (message.type === 'toolCall:start')
-    return (
-      <div className='flex gap-2.5 sm:gap-3 px-3 sm:px-6 py-2'>
-        <div
-          className='w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0'
-          style={{
-            background: 'rgba(255,184,48,0.1)',
-            border: '1px solid rgba(255,184,48,0.2)',
-          }}
-        >
-          <Wrench className='w-3 h-3 text-[#ffb830]' />
-        </div>
-        <div className='flex-1 pt-1'>
-          <ToolCallBlock
-            name={message.payload.name}
-            args={message.payload.args}
-          />
-        </div>
-      </div>
-    );
-
-  if (message.type === 'tool')
-    return (
-      <div className='flex gap-2.5 sm:gap-3 px-3 sm:px-6 py-2'>
-        <div
-          className='w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center shrink-0'
-          style={{
-            background: 'rgba(0,255,135,0.08)',
-            border: '1px solid rgba(0,255,135,0.15)',
-          }}
-        >
-          <div
-            className='w-2 h-2 rounded-full'
-            style={{ background: '#00ff87', boxShadow: '0 0 6px #00ff87' }}
-          />
-        </div>
-        <div className='flex-1 pt-1 min-w-0'>
-          <ToolResultBlock
-            name={message.payload.name}
-            result={message.payload.result}
-          />
-        </div>
-      </div>
-    );
+  if (message.type === 'toolCall:start') return null;
+  if (message.type === 'tool') return null;
 
   if (message.type === 'error')
     return (
