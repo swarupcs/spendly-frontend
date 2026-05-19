@@ -6,6 +6,8 @@ import {
   Wrench,
   ChevronDown,
   ChevronRight,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import {
   BarChart,
@@ -1301,7 +1303,15 @@ function AiTextContent({ text }: { text: string }) {
 }
 
 // ─── ChatMessage ──────────────────────────────────────────────────────────────
-export function ChatMessage({ message }: { message: StreamMessage }) {
+export function ChatMessage({
+  message,
+  reaction,
+  onReaction,
+}: {
+  message: StreamMessage;
+  reaction?: 'up' | 'down';
+  onReaction?: (type: 'up' | 'down') => void;
+}) {
   if (message.type === 'user')
     return (
       <div className='flex justify-end gap-2.5 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 items-end'>
@@ -1420,6 +1430,35 @@ export function ChatMessage({ message }: { message: StreamMessage }) {
         </div>
         <div className='flex-1 min-w-0 pt-1'>
           <AiTextContent text={message.payload.text} />
+          {/* Reaction buttons */}
+          {onReaction && (
+            <div className='flex items-center gap-1 mt-2'>
+              <button
+                onClick={() => onReaction('up')}
+                className='flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-[10px] font-mono'
+                style={{
+                  background: reaction === 'up' ? 'rgba(0,255,135,0.12)' : 'transparent',
+                  border: `1px solid ${reaction === 'up' ? 'rgba(0,255,135,0.3)' : 'rgba(124,92,252,0.1)'}`,
+                  color: reaction === 'up' ? '#00ff87' : '#4a4870',
+                }}
+                title='Helpful'
+              >
+                <ThumbsUp className='w-3 h-3' />
+              </button>
+              <button
+                onClick={() => onReaction('down')}
+                className='flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-[10px] font-mono'
+                style={{
+                  background: reaction === 'down' ? 'rgba(255,59,92,0.12)' : 'transparent',
+                  border: `1px solid ${reaction === 'down' ? 'rgba(255,59,92,0.3)' : 'rgba(124,92,252,0.1)'}`,
+                  color: reaction === 'down' ? '#ff3b5c' : '#4a4870',
+                }}
+                title='Not helpful'
+              >
+                <ThumbsDown className='w-3 h-3' />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

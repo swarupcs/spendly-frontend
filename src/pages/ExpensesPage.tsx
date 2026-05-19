@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Trash2,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   Receipt,
   ShieldCheck,
+  MessageSquare,
 } from 'lucide-react';
 import { ExportDialog } from '@/components/ExportDialog';
 import {
@@ -407,10 +409,12 @@ function MobileExpenseCard({
   exp,
   onEdit,
   onDelete,
+  onAskAi,
 }: {
   exp: Expense;
   onEdit: (exp: Expense) => void;
   onDelete: (exp: Expense) => void;
+  onAskAi: (exp: Expense) => void;
 }) {
   const homeCurrency = useUserCurrency();
   const color = CATEGORY_COLORS[exp.category] ?? '#4a4870';
@@ -489,6 +493,18 @@ function MobileExpenseCard({
               )}
             </div>
             <div className='flex gap-1.5'>
+              <button
+                onClick={() => onAskAi(exp)}
+                className='w-8 h-8 rounded-lg flex items-center justify-center'
+                style={{
+                  background: 'rgba(124,92,252,0.1)',
+                  border: '1px solid rgba(124,92,252,0.2)',
+                  color: '#9d7fff',
+                }}
+                title='Ask AI about this expense'
+              >
+                <MessageSquare className='w-3.5 h-3.5' />
+              </button>
               <button
                 onClick={() => onEdit(exp)}
                 className='w-8 h-8 rounded-lg flex items-center justify-center'
@@ -644,6 +660,13 @@ function FilterSheet({
 export default function ExpensesPage() {
   const homeCurrency = useUserCurrency();
   const fmt = useFmt();
+  const navigate = useNavigate();
+
+  const handleAskAi = (exp: Expense) => {
+    const q = `Tell me about my ${exp.category.toLowerCase()} expense "${exp.title}" for ${fmt(exp.convertedAmount)} on ${exp.date}${exp.merchant ? ` at ${exp.merchant}` : ''}`;
+    navigate(`/chat?q=${encodeURIComponent(q)}`);
+  };
+
 
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -989,6 +1012,7 @@ export default function ExpensesPage() {
                     exp={exp}
                     onEdit={handleEdit}
                     onDelete={setDeleteConfirm}
+                    onAskAi={handleAskAi}
                   />
                 ))}
               </div>
@@ -1112,6 +1136,18 @@ export default function ExpensesPage() {
                           </td>
                           <td className='px-5 py-3.5'>
                             <div className='flex gap-1.5'>
+                              <button
+                                onClick={() => handleAskAi(exp)}
+                                className='w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all'
+                                style={{
+                                  background: 'rgba(124,92,252,0.08)',
+                                  border: '1px solid rgba(124,92,252,0.2)',
+                                  color: '#9d7fff',
+                                }}
+                                title='Ask AI about this expense'
+                              >
+                                <MessageSquare className='w-3 h-3' />
+                              </button>
                               <button
                                 onClick={() => handleEdit(exp)}
                                 className='w-[30px] h-[30px] rounded-lg flex items-center justify-center transition-all'

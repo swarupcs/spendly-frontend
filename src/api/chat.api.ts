@@ -1,4 +1,4 @@
-import { BASE_URL, fetchWithAuth } from './client';
+import { BASE_URL, fetchWithAuth, request } from './client';
 
 export type StreamMessageType =
   | { type: 'ai'; payload: { text: string } }
@@ -15,6 +15,14 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   createdAt: string;
+}
+
+export interface ThreadSummary {
+  threadId: string;
+  title: string | null;
+  messageCount: number;
+  lastMessageAt: string;
+  preview: string;
 }
 
 interface ChatStreamCallbacks {
@@ -101,5 +109,9 @@ export const chatApi = {
       headers: { 'Content-Type': 'application/json' },
     });
     return res.json();
+  },
+
+  listThreads: async () => {
+    return request<ThreadSummary[]>('/chat/threads');
   },
 };
