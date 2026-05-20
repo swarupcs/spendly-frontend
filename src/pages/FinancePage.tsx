@@ -4,8 +4,12 @@ import {
   useZeroBasedBudget, useApplyZeroBasedBudget,
   useTaxSummary, useTopMerchants,
   useToolStats, useToolLog,
+  useCashFlowForecast
 } from '@/services/finance.service';
 import { useFmt } from '@/hooks/useCurrency';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+} from 'recharts';
 import { useUserSettings } from '@/services/auth.service';
 import {
   Card, CardContent, CardHeader, CardTitle,
@@ -17,9 +21,10 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, FileText,
   Store, Cpu, CheckCircle2,
   AlertCircle, BarChart2, Loader2,
+  LineChart, TrendingUp, TrendingDown,
 } from 'lucide-react';
 
-type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'ai-stats';
+type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats';
 
 function TabPill({ label, icon: Icon, active, onClick }: {
   id: Tab; label: string; icon: React.ElementType; active: boolean; onClick: () => void;
@@ -407,6 +412,144 @@ function MerchantsTab() {
   );
 }
 
+// ─── AI Forecast Tab ──────────────────────────────────────────────────────────
+function ForecastTab() {
+  const fmt = useFmt();
+  const { data: forecast, isLoading } = useCashFlowForecast(6);
+  const [incomeModifier, setIncomeModifier] = useState<number>(0);
+
+  if (isLoading) return <div className='h-64 rounded-xl shimmer' style={{ background: 'rgba(124,92,252,0.05)' }} />;
+
+  if (!forecast || forecast.length === 0) {
+    return <div className='text-center py-10 text-[#4a4870]'>Not enough data to generate forecast.</div>;
+  }
+
+  // Apply What-If modifier
+  const chartData = forecast.map((f) => {
+    const adjustedIncome = f.income + (f.income * incomeModifier) / 100;
+    const adjustedNetFlow = adjustedIncome - f.predictedExpenses;
+    return {
+      month: f.month,
+      income: adjustedIncome,
+      expenses: f.predictedExpenses,
+      recurring: f.recurringExpenses,
+      variable: f.variableExpenses,
+      netFlow: adjustedNetFlow,
+      isForecast: f.isForecast,
+    };
+  });
+
+  const tooltipStyle = {
+    contentStyle: {
+      background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)',
+      borderRadius: '10px', fontFamily: '"JetBrains Mono", monospace',
+      fontSize: '11px', color: '#f0efff',
+    },
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div style={tooltipStyle.contentStyle} className='p-3'>
+          <p className='font-bold mb-2 text-[#7c5cfc]'>
+            {label} {data.isForecast ? '(Predicted)' : ''}
+          </p>
+          <div className='space-y-1'>
+            <p className='flex justify-between gap-4'><span className='text-[#00ff87]'>Income:</span> <span>{fmt(data.income)}</span></p>
+            <p className='flex justify-between gap-4'><span className='text-[#ff3b5c]'>Expenses:</span> <span>{fmt(data.expenses)}</span></p>
+            <div className='pl-2 border-l border-[rgba(255,255,255,0.1)] my-1'>
+              <p className='flex justify-between gap-4 text-[9px] text-[#8b89b0]'><span>Recurring:</span> <span>{fmt(data.recurring)}</span></p>
+              <p className='flex justify-between gap-4 text-[9px] text-[#8b89b0]'><span>Variable:</span> <span>{fmt(data.variable)}</span></p>
+            </div>
+            <p className='flex justify-between gap-4 pt-1 border-t border-[rgba(255,255,255,0.1)] mt-1 font-bold'>
+              <span className={data.netFlow >= 0 ? 'text-[#00ff87]' : 'text-[#ff3b5c]'}>Net Flow:</span> 
+              <span className={data.netFlow >= 0 ? 'text-[#00ff87]' : 'text-[#ff3b5c]'}>{fmt(data.netFlow)}</span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className='space-y-4'>
+      <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(124,92,252,0.12)' }}>
+        <CardHeader className='pb-2 px-4 pt-4'>
+          <div className='flex items-center justify-between'>
+            <CardTitle className='text-sm font-display text-[#f0efff] flex items-center gap-2'>
+              <TrendingUp className='w-4 h-4 text-[#7c5cfc]' /> 6-Month Cash Flow Forecast
+            </CardTitle>
+            <Badge className='font-mono text-[9px]' style={{ background: 'rgba(124,92,252,0.1)', color: '#9d7fff', border: '1px solid rgba(124,92,252,0.2)' }}>
+              AI Regression Model
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className='px-2 pb-4'>
+          <div className='h-64 w-full mt-4'>
+            <ResponsiveContainer width='100%' height='100%'>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id='colorNetFlowPos' x1='0' y1='0' x2='0' y2='1'>
+                    <stop offset='5%' stopColor='#00ff87' stopOpacity={0.3} />
+                    <stop offset='95%' stopColor='#00ff87' stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id='colorNetFlowNeg' x1='0' y1='0' x2='0' y2='1'>
+                    <stop offset='5%' stopColor='#ff3b5c' stopOpacity={0.3} />
+                    <stop offset='95%' stopColor='#ff3b5c' stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray='3 3' stroke='rgba(124,92,252,0.08)' vertical={false} />
+                <XAxis dataKey='month' tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
+                <Tooltip content={<CustomTooltip />} />
+                <ReferenceLine y={0} stroke='rgba(255,255,255,0.1)' />
+                {/* Find the boundary index where prediction starts */}
+                {chartData.findIndex(d => d.isForecast) !== -1 && (
+                  <ReferenceLine x={chartData[chartData.findIndex(d => d.isForecast)].month} stroke='#9d7fff' strokeDasharray='3 3' label={{ position: 'top', value: 'Prediction', fill: '#9d7fff', fontSize: 10 }} />
+                )}
+                
+                {/* Area for Net Flow */}
+                <Area type='monotone' dataKey='netFlow' 
+                  stroke={(d: any) => d.netFlow >= 0 ? '#00ff87' : '#ff3b5c'} 
+                  fill='url(#colorNetFlowPos)' strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* What-if scenario builder */}
+      <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(0,212,255,0.15)' }}>
+        <CardHeader className='pb-2 px-4 pt-4'>
+          <CardTitle className='text-sm font-display text-[#00d4ff] flex items-center gap-2'>
+            <LineChart className='w-4 h-4' /> "What-if" Scenario Planner
+          </CardTitle>
+        </CardHeader>
+        <CardContent className='px-4 pb-4 space-y-4'>
+          <div className='space-y-3'>
+            <div className='flex items-center justify-between'>
+              <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Simulate Income Change</Label>
+              <span className='font-mono text-xs font-bold' style={{ color: incomeModifier > 0 ? '#00ff87' : incomeModifier < 0 ? '#ff3b5c' : '#f0efff' }}>
+                {incomeModifier > 0 ? '+' : ''}{incomeModifier}%
+              </span>
+            </div>
+            <input type='range' min='-50' max='50' step='5' value={incomeModifier} onChange={(e) => setIncomeModifier(parseInt(e.target.value, 10))}
+              className='w-full accent-[#00d4ff]' />
+            <div className='flex justify-between text-[9px] text-[#4a4870] font-mono'>
+              <span>-50%</span>
+              <span>0%</span>
+              <span>+50%</span>
+            </div>
+            <p className='text-xs text-[#8b89b0]'>Adjust the slider to see how a change in your income affects your future net cash flow.</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── AI Stats Tab ─────────────────────────────────────────────────────────────
 function AIStatsTab() {
   const { data: stats, isLoading: statsLoading } = useToolStats(30);
@@ -501,6 +644,7 @@ export default function FinancePage() {
     { id: 'zero-budget', label: 'Zero Budget', icon: BarChart2 },
     { id: 'tax', label: 'Tax Summary', icon: FileText },
     { id: 'merchants', label: 'Merchants', icon: Store },
+    { id: 'forecast', label: 'Forecast', icon: LineChart },
     { id: 'ai-stats', label: 'AI Stats', icon: Cpu },
   ];
 
@@ -524,6 +668,7 @@ export default function FinancePage() {
           {activeTab === 'zero-budget' && <ZeroBudgetTab />}
           {activeTab === 'tax' && <TaxTab />}
           {activeTab === 'merchants' && <MerchantsTab />}
+          {activeTab === 'forecast' && <ForecastTab />}
           {activeTab === 'ai-stats' && <AIStatsTab />}
         </div>
       </div>

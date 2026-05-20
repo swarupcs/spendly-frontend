@@ -69,6 +69,18 @@ export interface MerchantStats {
   topCategory: string;
 }
 
+// ─── Cash Flow Forecast ─────────────────────────────────────────────────────────
+
+export interface ForecastResult {
+  month: string; // YYYY-MM
+  income: number;
+  predictedExpenses: number;
+  recurringExpenses: number;
+  variableExpenses: number;
+  netCashFlow: number;
+  isForecast: boolean;
+}
+
 // ─── Tool Stats ───────────────────────────────────────────────────────────────
 
 export interface ToolCallStats {
@@ -146,5 +158,10 @@ export const financeApi = {
   getToolLog: (limit?: number) => {
     const qs = limit ? `?limit=${limit}` : '';
     return request<ToolCallLog[]>(`/finance/tool-log${qs}`);
+  },
+
+  getCashFlowForecast: (months?: number) => {
+    const qs = months ? `?months=${months}` : '';
+    return request<ForecastResult[]>(`/finance/forecast${qs}`);
   },
 };

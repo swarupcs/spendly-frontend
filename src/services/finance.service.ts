@@ -9,6 +9,7 @@ export const financeKeys = {
   merchants: (params?: object) => ['finance', 'merchants', params] as const,
   toolStats: (days?: number) => ['finance', 'tool-stats', days] as const,
   toolLog: (limit?: number) => ['finance', 'tool-log', limit] as const,
+  cashFlow: (months?: number) => ['finance', 'cashflow', months] as const,
 };
 
 export function useNetWorth() {
@@ -124,5 +125,18 @@ export function useToolLog(limit?: number) {
       return res.data;
     },
     staleTime: 30_000,
+  });
+}
+
+export function useCashFlowForecast(months?: number) {
+  return useQuery({
+    queryKey: financeKeys.cashFlow(months),
+    queryFn: async () => {
+      const res = await financeApi.getCashFlowForecast(months);
+      if (!res.success || !res.data)
+        throw new Error(res.error ?? 'Failed to load cash flow forecast');
+      return res.data;
+    },
+    staleTime: 5 * 60_000,
   });
 }
