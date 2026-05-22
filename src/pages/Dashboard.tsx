@@ -312,19 +312,19 @@ export default function Dashboard() {
   });
 
   const isLoading = statsLoading || expLoading;
-  const expenses = expData?.expenses ?? [];
+  const expenses = useMemo(() => expData?.expenses ?? [], [expData?.expenses]);
   const stats = statsData;
 
   // Additional computed stats
-  const now = new Date();
   const daysInPeriod = useMemo(() => {
+    const now = new Date();
     if (period === 'weekly') return 7;
     if (period === 'yearly') {
       const isLeap = (now.getFullYear() % 4 === 0 && now.getFullYear() % 100 !== 0) || now.getFullYear() % 400 === 0;
       return isLeap ? 366 : 365;
     }
     return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  }, [period, now]);
+  }, [period]);
 
   const dailyAvg = (stats?.total ?? 0) / daysInPeriod;
   

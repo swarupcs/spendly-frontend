@@ -413,8 +413,44 @@ function MerchantsTab() {
 }
 
 // ─── AI Forecast Tab ──────────────────────────────────────────────────────────
-function ForecastTab() {
+
+const tooltipStyle = {
+  contentStyle: {
+    background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)',
+    borderRadius: '10px', fontFamily: '"JetBrains Mono", monospace',
+    fontSize: '11px', color: '#f0efff',
+  },
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ForecastTooltip({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) {
   const fmt = useFmt();
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div style={tooltipStyle.contentStyle} className='p-3'>
+        <p className='font-bold mb-2 text-[#7c5cfc]'>
+          {label} {data.isForecast ? '(Predicted)' : ''}
+        </p>
+        <div className='space-y-1'>
+          <p className='flex justify-between gap-4'><span className='text-[#00ff87]'>Income:</span> <span>{fmt(data.income)}</span></p>
+          <p className='flex justify-between gap-4'><span className='text-[#ff3b5c]'>Expenses:</span> <span>{fmt(data.expenses)}</span></p>
+          <div className='pl-2 border-l border-[rgba(255,255,255,0.1)] my-1'>
+            <p className='flex justify-between gap-4 text-[9px] text-[#8b89b0]'><span>Recurring:</span> <span>{fmt(data.recurring)}</span></p>
+            <p className='flex justify-between gap-4 text-[9px] text-[#8b89b0]'><span>Variable:</span> <span>{fmt(data.variable)}</span></p>
+          </div>
+          <p className='flex justify-between gap-4 pt-1 border-t border-[rgba(255,255,255,0.1)] mt-1 font-bold'>
+            <span className={data.netFlow >= 0 ? 'text-[#00ff87]' : 'text-[#ff3b5c]'}>Net Flow:</span> 
+            <span className={data.netFlow >= 0 ? 'text-[#00ff87]' : 'text-[#ff3b5c]'}>{fmt(data.netFlow)}</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+function ForecastTab() {
   const { data: forecast, isLoading } = useCashFlowForecast(6);
   const [incomeModifier, setIncomeModifier] = useState<number>(0);
 
@@ -439,39 +475,7 @@ function ForecastTab() {
     };
   });
 
-  const tooltipStyle = {
-    contentStyle: {
-      background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)',
-      borderRadius: '10px', fontFamily: '"JetBrains Mono", monospace',
-      fontSize: '11px', color: '#f0efff',
-    },
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div style={tooltipStyle.contentStyle} className='p-3'>
-          <p className='font-bold mb-2 text-[#7c5cfc]'>
-            {label} {data.isForecast ? '(Predicted)' : ''}
-          </p>
-          <div className='space-y-1'>
-            <p className='flex justify-between gap-4'><span className='text-[#00ff87]'>Income:</span> <span>{fmt(data.income)}</span></p>
-            <p className='flex justify-between gap-4'><span className='text-[#ff3b5c]'>Expenses:</span> <span>{fmt(data.expenses)}</span></p>
-            <div className='pl-2 border-l border-[rgba(255,255,255,0.1)] my-1'>
-              <p className='flex justify-between gap-4 text-[9px] text-[#8b89b0]'><span>Recurring:</span> <span>{fmt(data.recurring)}</span></p>
-              <p className='flex justify-between gap-4 text-[9px] text-[#8b89b0]'><span>Variable:</span> <span>{fmt(data.variable)}</span></p>
-            </div>
-            <p className='flex justify-between gap-4 pt-1 border-t border-[rgba(255,255,255,0.1)] mt-1 font-bold'>
-              <span className={data.netFlow >= 0 ? 'text-[#00ff87]' : 'text-[#ff3b5c]'}>Net Flow:</span> 
-              <span className={data.netFlow >= 0 ? 'text-[#00ff87]' : 'text-[#ff3b5c]'}>{fmt(data.netFlow)}</span>
-            </p>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
+  // Removed inline tooltip component
 
   return (
     <div className='space-y-4'>
@@ -503,7 +507,7 @@ function ForecastTab() {
                 <CartesianGrid strokeDasharray='3 3' stroke='rgba(124,92,252,0.08)' vertical={false} />
                 <XAxis dataKey='month' tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)} />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<ForecastTooltip />} />
                 <ReferenceLine y={0} stroke='rgba(255,255,255,0.1)' />
                 {/* Find the boundary index where prediction starts */}
                 {chartData.findIndex(d => d.isForecast) !== -1 && (

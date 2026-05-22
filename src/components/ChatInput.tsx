@@ -15,20 +15,19 @@ export function ChatInput({ onSubmit, disabled, initialValue }: ChatInputProps) 
   const [value, setValue] = useState(initialValue ?? '');
   const [focused, setFocused] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [voiceSupported] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const SR =
+      (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ??
+      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+    return !!SR;
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // Check voice support on mount
-  useEffect(() => {
-    const SR =
-      (window as unknown as { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ??
-      (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
-    setVoiceSupported(!!SR);
-  }, []);
-
   // Sync initial value from props (for deep-link prefill)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialValue) setValue(initialValue);
   }, [initialValue]);
 
@@ -62,8 +61,8 @@ export function ChatInput({ onSubmit, disabled, initialValue }: ChatInputProps) 
     }
 
     const SR =
-      (window as unknown as { SpeechRecognition?: typeof SpeechRecognition }).SpeechRecognition ??
-      (window as unknown as { webkitSpeechRecognition?: typeof SpeechRecognition }).webkitSpeechRecognition;
+      (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ??
+      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
     if (!SR) return;
 
     const recognition = new SR();
