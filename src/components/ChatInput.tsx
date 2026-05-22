@@ -1,6 +1,10 @@
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react';
 import { ArrowUp, Mic, MicOff, Square } from 'lucide-react';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type SpeechRecognition = any;
+type SpeechRecognitionEvent = any;
+
 interface ChatInputProps {
   onSubmit: (value: string) => void;
   disabled?: boolean;

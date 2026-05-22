@@ -29,6 +29,7 @@ import type {
   ExpenseFilters,
   CreateExpenseInput,
 } from '@/api/expenses.api';
+import { expensesApi } from '@/api/expenses.api';
 import { CURRENCIES, getCurrencySymbol } from '@/api/currency.api';
 import { useUserCurrency, useExchangeRates, useFmt } from '@/hooks/useCurrency';
 import { Button } from '@/components/ui/button';

@@ -81,7 +81,20 @@
 @media (max-width: 767px) {
   :root {
     --mobile-header-height:    56px;
-    --mobile-bottomnav-height: 64px;
+    --mobile-bottomnav-height: 60px;
+  }
+}
+
+/* Prevent rubber-banding on mobile body but allow child scrolling */
+html, body {
+  overscroll-behavior: none;
+}
+
+/* Ensure modals and sheets are readable on small screens */
+@media (max-width: 640px) {
+  [role='dialog'] {
+    max-width: calc(100vw - 2rem) !important;
+    margin: 1rem !important;
   }
 }
 
@@ -189,6 +202,13 @@
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Tap highlight for interactive elements on mobile */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: rgba(124, 92, 252, 0.08);
+  }
 }
 
 /* ─── Noise texture overlay ── */
@@ -317,5 +337,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @media (max-width: 768px) {
   button, a[role="button"] {
     min-height: 36px;
+  }
+  /* Make table cells wrap on small screens */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }

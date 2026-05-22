@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, FileText,
   Store, Cpu, CheckCircle2,
   AlertCircle, BarChart2, Loader2,
-  LineChart, TrendingUp, TrendingDown,
+  LineChart, TrendingUp,
 } from 'lucide-react';
 
 type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats';
@@ -510,9 +510,8 @@ function ForecastTab() {
                   <ReferenceLine x={chartData[chartData.findIndex(d => d.isForecast)].month} stroke='#9d7fff' strokeDasharray='3 3' label={{ position: 'top', value: 'Prediction', fill: '#9d7fff', fontSize: 10 }} />
                 )}
                 
-                {/* Area for Net Flow */}
                 <Area type='monotone' dataKey='netFlow' 
-                  stroke={(d: any) => d.netFlow >= 0 ? '#00ff87' : '#ff3b5c'} 
+                  stroke='#7c5cfc' 
                   fill='url(#colorNetFlowPos)' strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>

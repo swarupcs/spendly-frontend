@@ -793,7 +793,7 @@ function RenderedChart({ chart }: { chart: NonNullable<ChartShape> }) {
 }
 
 // ─── Tool blocks ──────────────────────────────────────────────────────────────
-function ToolCallBlock({
+function _ToolCallBlock({
   name,
   args,
 }: {
@@ -837,7 +837,7 @@ function ToolCallBlock({
   );
 }
 
-function ToolResultBlock({
+function _ToolResultBlock({
   name,
   result,
 }: {

@@ -15,6 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
+  MoreHorizontal,
+  X as XIcon,
   // CreditCard,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
@@ -384,80 +386,134 @@ function MobileTopBar() {
   );
 }
 
-// ─── Mobile: bottom navigation bar ───────────────────────────────────────────
+// ─── Mobile: bottom navigation bar ───────────────────────────────────────
 function MobileBottomNav() {
   const location = useLocation();
   const { mutate: signOut } = useSignOut();
   const user = useAuthStore((s) => s.user);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const allItems = getNavItems(user?.role);
+  const primaryItems = allItems.slice(0, 4);
+  const moreItems = allItems.slice(4);
 
   return (
-    <nav
-      className='md:hidden fixed bottom-0 left-0 right-0 z-50'
-      style={{
-        background: 'rgba(8,8,16,0.97)',
-        borderTop: '1px solid rgba(124,92,252,0.15)',
-        backdropFilter: 'blur(20px)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
-    >
-      <div className='flex items-stretch justify-around'>
-        {getNavItems(user?.role).map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === '/dashboard'
-              ? location.pathname === '/dashboard'
-              : location.pathname.startsWith(item.href);
-          return (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              className='flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-all relative'
-              style={{ color: isActive ? '#9d7fff' : '#4a4870' }}
-            >
-              {/* Active indicator pill at top edge */}
-              {isActive && (
-                <div
-                  className='absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full'
-                  style={{
-                    background: 'linear-gradient(90deg, #7c5cfc, #00d4ff)',
-                  }}
-                />
-              )}
-              <div
-                className='flex items-center justify-center w-8 h-8 rounded-xl transition-all'
-                style={{
-                  background: isActive
-                    ? 'rgba(124,92,252,0.15)'
-                    : 'transparent',
-                }}
-              >
-                <Icon size={19} strokeWidth={isActive ? 2.5 : 1.8} />
-              </div>
-              <span
-                className='font-mono text-[9px] tracking-wide leading-none'
+    <>
+      <nav
+        className='md:hidden fixed bottom-0 left-0 right-0 z-50'
+        style={{
+          background: 'rgba(8,8,16,0.97)',
+          borderTop: '1px solid rgba(124,92,252,0.15)',
+          backdropFilter: 'blur(20px)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div className='flex items-stretch justify-around'>
+          {primaryItems.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              item.href === '/dashboard'
+                ? location.pathname === '/dashboard'
+                : location.pathname.startsWith(item.href);
+            return (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                className='flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all relative'
                 style={{ color: isActive ? '#9d7fff' : '#4a4870' }}
               >
-                {item.label}
-              </span>
-            </NavLink>
-          );
-        })}
+                {isActive && (
+                  <div
+                    className='absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full'
+                    style={{ background: 'linear-gradient(90deg, #7c5cfc, #00d4ff)' }}
+                  />
+                )}
+                <div
+                  className='flex items-center justify-center w-8 h-8 rounded-xl transition-all'
+                  style={{ background: isActive ? 'rgba(124,92,252,0.15)' : 'transparent' }}
+                >
+                  <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} />
+                </div>
+                <span
+                  className='font-mono text-[8px] tracking-wide leading-none'
+                  style={{ color: isActive ? '#9d7fff' : '#4a4870' }}
+                >
+                  {item.label}
+                </span>
+              </NavLink>
+            );
+          })}
 
-        {/* Sign out tab */}
-        <button
-          onClick={() => signOut()}
-          className='flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-all'
-          style={{ color: '#4a4870' }}
-        >
-          <div className='flex items-center justify-center w-8 h-8 rounded-xl'>
-            <LogOut size={19} strokeWidth={1.8} />
+          {/* More button */}
+          <button
+            onClick={() => setMoreOpen(true)}
+            className='flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all'
+            style={{ color: moreOpen ? '#9d7fff' : '#4a4870' }}
+          >
+            <div className='flex items-center justify-center w-8 h-8 rounded-xl'>
+              <MoreHorizontal size={18} strokeWidth={1.8} />
+            </div>
+            <span className='font-mono text-[8px] tracking-wide leading-none'>More</span>
+          </button>
+        </div>
+      </nav>
+
+      {/* More sheet overlay */}
+      {moreOpen && (
+        <>
+          <div className='fixed inset-0 bg-black/60 z-[60] md:hidden' onClick={() => setMoreOpen(false)} />
+          <div
+            className='fixed bottom-0 left-0 right-0 z-[61] md:hidden rounded-t-3xl'
+            style={{
+              background: 'rgba(13,13,26,0.98)',
+              borderTop: '1px solid rgba(124,92,252,0.2)',
+              paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+              maxHeight: '70vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div className='flex justify-center py-3'>
+              <div className='w-10 h-1 rounded-full bg-[rgba(124,92,252,0.3)]' />
+            </div>
+            <div className='px-4 pb-2 flex items-center justify-between'>
+              <span className='font-display text-sm font-bold text-[#f0efff]'>More</span>
+              <button onClick={() => setMoreOpen(false)} className='p-1.5 rounded-lg hover:bg-[rgba(124,92,252,0.1)] text-[#4a4870]'>
+                <XIcon className='w-4 h-4' />
+              </button>
+            </div>
+            <div className='px-3 space-y-1'>
+              {moreItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname.startsWith(item.href);
+                return (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setMoreOpen(false)}
+                    className='flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all'
+                    style={{
+                      background: isActive ? 'rgba(124,92,252,0.12)' : 'transparent',
+                      border: `1px solid ${isActive ? 'rgba(124,92,252,0.25)' : 'transparent'}`,
+                      color: isActive ? '#9d7fff' : '#8b89b0',
+                    }}
+                  >
+                    <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                    <span className='font-sans text-sm font-medium'>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+              <button
+                onClick={() => { signOut(); setMoreOpen(false); }}
+                className='flex items-center gap-3 px-4 py-3.5 rounded-xl w-full text-left transition-all text-[#8b89b0] hover:text-[#ff6b6b] hover:bg-[rgba(255,59,92,0.08)]'
+              >
+                <LogOut size={18} strokeWidth={2} />
+                <span className='font-sans text-sm font-medium'>Sign Out</span>
+              </button>
+            </div>
           </div>
-          <span className='font-mono text-[9px] tracking-wide leading-none'>
-            Logout
-          </span>
-        </button>
-      </div>
-    </nav>
+        </>
+      )}
+    </>
   );
 }
 

@@ -33,6 +33,7 @@ import {
   Calendar,
   ArrowUpCircle,
   ArrowDownCircle,
+  X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
