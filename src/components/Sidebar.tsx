@@ -8,8 +8,8 @@ import {
   Settings,
   TrendingUp,
   Target,
-  // RefreshCw,
-  // Trophy,
+  RefreshCw,
+  Trophy,
   Zap,
   LogOut,
   ChevronLeft,
@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   MoreHorizontal,
   X as XIcon,
+  Wallet,
   // CreditCard,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
@@ -32,9 +33,10 @@ const getNavItems = (role?: string) => {
     { href: '/chat', label: 'AI Chat', icon: MessageSquare },
     { href: '/expenses', label: 'Expenses', icon: PieChart },
     { href: '/budget', label: 'Budgets', icon: Target },
-    // { href: '/recurring', label: 'Recurring', icon: RefreshCw },
-    // { href: '/goals', label: 'Goals', icon: Trophy },
+    { href: '/recurring', label: 'Recurring', icon: RefreshCw },
+    { href: '/goals', label: 'Goals', icon: Trophy },
     { href: '/insights', label: 'Insights', icon: TrendingUp },
+    { href: '/finance', label: 'Finance', icon: Wallet },
     // { href: '/billing', label: 'Billing', icon: CreditCard },
     { href: '/settings', label: 'Settings', icon: Settings },
   ];
