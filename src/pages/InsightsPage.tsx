@@ -21,6 +21,10 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
+  RadialBarChart,
+  RadialBar,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -836,6 +840,13 @@ function RecommendationsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function InsightsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const { data: health } = useHealthScore();
+  const { data: weekly } = useWeeklySummary();
+  const fmt = useFmt();
+
+  const gradeColor = health
+    ? ({ A: '#00ff87', B: '#00d4ff', C: '#ffb830', D: '#ff6b30', F: '#ff2d78' }[health.grade] ?? '#9d7fff')
+    : '#4a4870';
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Overview', icon: BarChart2 },
@@ -852,8 +863,46 @@ export default function InsightsPage() {
       {/* Sticky header + tab pills */}
       <div className='shrink-0' style={{ borderBottom: '1px solid rgba(124,92,252,0.1)', background: 'rgba(8,8,16,0.97)', backdropFilter: 'blur(20px)', zIndex: 10 }}>
         <div className='px-4 sm:px-8 py-4'>
-          <h1 className='font-display text-xl sm:text-2xl font-extrabold text-[#f0efff] tracking-tight'>Insights</h1>
-          <p className='font-mono text-[10px] text-[#4a4870]'>AI-powered spending analysis</p>
+          <div className='flex items-start justify-between gap-4'>
+            <div>
+              <h1 className='font-display text-xl sm:text-2xl font-extrabold text-[#f0efff] tracking-tight flex items-center gap-2'>
+                <Brain className='w-5 h-5 text-[#7c5cfc]' /> AI Insights
+              </h1>
+              <p className='font-mono text-[10px] text-[#4a4870] mt-0.5'>Powered by AI · Based on your real spending data</p>
+            </div>
+            {/* Quick KPI row */}
+            <div className='flex items-center gap-3 shrink-0'>
+              {health && (
+                <div
+                  className='flex items-center gap-2 px-3 py-1.5 rounded-xl'
+                  style={{ background: `${gradeColor}10`, border: `1px solid ${gradeColor}25` }}
+                >
+                  <div
+                    className='w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black'
+                    style={{ background: gradeColor, color: '#080810' }}
+                  >
+                    {health.grade}
+                  </div>
+                  <div>
+                    <p className='font-mono text-[8px] text-[#4a4870] uppercase leading-none'>Health</p>
+                    <p className='font-display text-sm font-black leading-none' style={{ color: gradeColor }}>{health.score}/100</p>
+                  </div>
+                </div>
+              )}
+              {weekly && (
+                <div
+                  className='flex items-center gap-2 px-3 py-1.5 rounded-xl'
+                  style={{ background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)' }}
+                >
+                  <Calendar className='w-4 h-4 text-[#00d4ff]' />
+                  <div>
+                    <p className='font-mono text-[8px] text-[#4a4870] uppercase leading-none'>This Week</p>
+                    <p className='font-display text-sm font-black text-[#00d4ff] leading-none'>{fmt(weekly.total)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <div className='flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-hide'>
           {tabs.map((t) => (

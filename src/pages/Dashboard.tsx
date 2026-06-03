@@ -650,6 +650,54 @@ export default function Dashboard() {
     color: PIE_COLORS[i % PIE_COLORS.length],
   }));
 
+  // Category Spending Trends — current vs previous period
+  const categoryTrendData = useMemo(() => {
+    if (!stats?.byCategory || !prevStatsData?.byCategory) return [];
+    const prevMap: Record<string, number> = {};
+    for (const c of prevStatsData.byCategory) prevMap[c.category] = c.amount;
+    
+    return stats.byCategory.map((c, i) => {
+      const prev = prevMap[c.category] ?? 0;
+      const pctChange = prev > 0 ? Math.round(((c.amount - prev) / prev) * 100) : null;
+      return {
+        category: c.category,
+        current: Math.round(c.amount),
+        previous: Math.round(prev),
+        pctChange,
+        color: CATEGORY_COLORS[c.category] ?? PIE_COLORS[i % PIE_COLORS.length],
+      };
+    }).sort((a, b) => b.current - a.current);
+  }, [stats, prevStatsData]);
+
+  // Weekend vs. Weekday spending
+  const weekdayData = useMemo(() => {
+    let weekdayTotal = 0, weekendTotal = 0;
+    let weekdayCount = 0, weekendCount = 0;
+    for (const e of expenses) {
+      const day = new Date(e.date).getDay(); // 0=Sun, 6=Sat
+      const isWeekend = day === 0 || day === 6;
+      if (isWeekend) {
+        weekendTotal += e.convertedAmount;
+        weekendCount++;
+      } else {
+        weekdayTotal += e.convertedAmount;
+        weekdayCount++;
+      }
+    }
+    const total = weekdayTotal + weekendTotal;
+    return {
+      weekday: { total: Math.round(weekdayTotal), count: weekdayCount, pct: total > 0 ? (weekdayTotal / total) * 100 : 0 },
+      weekend: { total: Math.round(weekendTotal), count: weekendCount, pct: total > 0 ? (weekendTotal / total) * 100 : 0 },
+      byDay: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((name, idx) => {
+        let amt = 0;
+        for (const e of expenses) {
+          if (new Date(e.date).getDay() === idx) amt += e.convertedAmount;
+        }
+        return { name, amount: Math.round(amt), isWeekend: idx === 0 || idx === 6 };
+      }),
+    };
+  }, [expenses]);
+
   const tooltipStyle = {
     contentStyle: {
       background: '#0d0d1a',
@@ -1724,6 +1772,107 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {/* ── Category Spending Trends ── */}
+          {!isLoading && categoryTrendData.length > 0 && prevStatsData && (
+            <Card
+              className='border-[rgba(124,92,252,0.12)]'
+              style={{ background: 'rgba(13,13,26,0.7)', backdropFilter: 'blur(20px)' }}
+            >
+              <CardHeader className='pb-2 px-4 pt-4'>
+                <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
+                  <div className='w-0.5 h-4 rounded-sm' style={{ background: 'linear-gradient(180deg, #9d7fff, #00d4ff)' }} />
+                  Category Trends vs. Previous Period
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='px-4 pb-5 space-y-3'>
+                {categoryTrendData.map((cat) => (
+                  <div key={cat.category}>
+                    <div className='flex items-center justify-between mb-1.5'>
+                      <div className='flex items-center gap-2'>
+                        <div className='w-2 h-2 rounded-sm shrink-0' style={{ background: cat.color }} />
+                        <span className='font-sans text-sm text-[#d4d2f0]'>{cat.category}</span>
+                      </div>
+                      <div className='flex items-center gap-3'>
+                        <span className='font-mono text-[10px] text-[#4a4870]'>{fmt(cat.previous)} &rarr; {fmt(cat.current)}</span>
+                        {cat.pctChange !== null && (
+                          <span
+                            className='font-mono text-[10px] font-bold flex items-center gap-0.5 px-1.5 py-0.5 rounded'
+                            style={{
+                              color: cat.pctChange > 0 ? '#ff2d78' : '#00ff87',
+                              background: cat.pctChange > 0 ? 'rgba(255,45,120,0.1)' : 'rgba(0,255,135,0.1)',
+                            }}
+                          >
+                            {cat.pctChange > 0 ? <TrendingUp className='w-3 h-3' /> : <TrendingDown className='w-3 h-3' />}
+                            {cat.pctChange > 0 ? '+' : ''}{cat.pctChange}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className='flex gap-1 h-2 rounded-full overflow-hidden' style={{ background: 'rgba(124,92,252,0.06)' }}>
+                      <div
+                        className='h-full rounded-full transition-all duration-700'
+                        style={{ width: `${stats?.total ? (cat.current / stats.total) * 100 : 0}%`, background: cat.color, opacity: 0.9 }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Weekend vs. Weekday Breakdown ── */}
+          {!isLoading && expenses.length > 0 && (
+            <Card
+              className='border-[rgba(124,92,252,0.12)]'
+              style={{ background: 'rgba(13,13,26,0.7)', backdropFilter: 'blur(20px)' }}
+            >
+              <CardHeader className='pb-2 px-4 pt-4'>
+                <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
+                  <div className='w-0.5 h-4 rounded-sm' style={{ background: 'linear-gradient(180deg, #5b8fff, #ff2d78)' }} />
+                  Weekend vs. Weekday Spending
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='px-4 pb-5'>
+                {/* Summary split */}
+                <div className='flex gap-4 mb-4'>
+                  <div className='flex-1 p-3 rounded-xl' style={{ background: 'rgba(91,143,255,0.08)', border: '1px solid rgba(91,143,255,0.15)' }}>
+                    <p className='font-mono text-[9px] text-[#4a4870] uppercase tracking-wider mb-1'>Weekdays</p>
+                    <p className='font-display text-xl font-bold text-[#5b8fff]'>{fmt(weekdayData.weekday.total)}</p>
+                    <p className='font-mono text-[10px] text-[#4a4870]'>{weekdayData.weekday.count} txns · {Math.round(weekdayData.weekday.pct)}%</p>
+                  </div>
+                  <div className='flex-1 p-3 rounded-xl' style={{ background: 'rgba(255,45,120,0.08)', border: '1px solid rgba(255,45,120,0.15)' }}>
+                    <p className='font-mono text-[9px] text-[#4a4870] uppercase tracking-wider mb-1'>Weekends</p>
+                    <p className='font-display text-xl font-bold text-[#ff2d78]'>{fmt(weekdayData.weekend.total)}</p>
+                    <p className='font-mono text-[10px] text-[#4a4870]'>{weekdayData.weekend.count} txns · {Math.round(weekdayData.weekend.pct)}%</p>
+                  </div>
+                </div>
+                {/* Split bar */}
+                <div className='h-3 rounded-full overflow-hidden flex mb-4' style={{ background: 'rgba(124,92,252,0.06)' }}>
+                  <div className='h-full transition-all duration-700' style={{ width: `${weekdayData.weekday.pct}%`, background: 'linear-gradient(90deg, #5b8fff, #7c5cfc)' }} />
+                  <div className='h-full transition-all duration-700' style={{ width: `${weekdayData.weekend.pct}%`, background: 'linear-gradient(90deg, #ff2d78, #ffb830)' }} />
+                </div>
+                {/* By-day bar chart */}
+                <ResponsiveContainer width='100%' height={130}>
+                  <BarChart data={weekdayData.byDay} margin={{ top: 4, right: 0, left: -24, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray='3 3' stroke='rgba(124,92,252,0.08)' vertical={false} />
+                    <XAxis dataKey='name' tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(1)}k` : String(v)} />
+                    <Tooltip
+                      contentStyle={{ background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)', borderRadius: '8px' }}
+                      itemStyle={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '11px' }}
+                      labelStyle={{ color: '#8b89b0', fontSize: '11px' }}
+                    />
+                    <Bar dataKey='amount' radius={[4, 4, 0, 0]}>
+                      {weekdayData.byDay.map((d, idx) => (
+                        <Cell key={idx} fill={d.isWeekend ? '#ff2d78' : '#5b8fff'} opacity={0.85} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
           )}
 
           {/* ── Loading skeletons ── */}
