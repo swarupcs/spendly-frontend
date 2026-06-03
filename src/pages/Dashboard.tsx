@@ -567,6 +567,37 @@ export default function Dashboard() {
   const topCategory = stats?.byCategory?.[0];
   const lowestCategory = stats?.byCategory?.[stats.byCategory.length - 1];
 
+  // Top Merchants / Vendors
+  const topMerchants = useMemo(() => {
+    if (!expenses) return [];
+    const merchantMap: Record<string, { count: number; total: number }> = {};
+    
+    for (const e of expenses) {
+      // Normalize merchant name slightly
+      const name = e.title.trim();
+      if (!name) continue;
+      
+      // Use lowercase for grouping
+      const key = name.toLowerCase();
+      if (!merchantMap[key]) {
+        merchantMap[key] = { count: 0, total: 0 };
+      }
+      merchantMap[key].count += 1;
+      merchantMap[key].total += e.convertedAmount;
+    }
+    
+    // Convert to array and sort by total amount
+    const sorted = Object.entries(merchantMap)
+      .map(([key, data]) => ({ name: key, ...data }))
+      .sort((a, b) => b.total - a.total);
+      
+    // Format names (capitalize first letter of each word)
+    return sorted.slice(0, 5).map(m => {
+      const formattedName = m.name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      return { ...m, name: formattedName };
+    });
+  }, [expenses]);
+
   // Build bar chart data — group by date (day for week, month for year, day for month)
   const barData = useMemo(() => {
     if (period === 'yearly') {
@@ -1336,9 +1367,9 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ── Lists Grid: Recent Transactions & Day-wise Totals ── */}
+          {/* ── Lists Grid: Recent Transactions, Top Merchants, & Day-wise Totals ── */}
           {expenses.length > 0 && (
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 gap-4'>
               <Card
                 className='border-[rgba(124,92,252,0.12)] h-full'
                 style={{
@@ -1401,6 +1432,63 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+
+              {/* ── Top Merchants ── */}
+              <Card
+                className='border-[rgba(124,92,252,0.12)] h-full'
+                style={{
+                  background: 'rgba(13,13,26,0.7)',
+                  backdropFilter: 'blur(20px)',
+                }}
+              >
+                <CardHeader className='pb-2 px-4 pt-4'>
+                  <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
+                    <div
+                      className='w-0.5 h-4 rounded-sm'
+                      style={{
+                        background: 'linear-gradient(180deg, #ffb830, #ff2d78)',
+                      }}
+                    />
+                    Top Merchants
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='px-2 pb-3 space-y-0.5'>
+                  {topMerchants.length === 0 ? (
+                    <div className='text-center text-[#4a4870] font-mono text-xs py-4'>No data</div>
+                  ) : (
+                    topMerchants.map((merchant, idx) => (
+                      <div
+                        key={idx}
+                        className='flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[rgba(124,92,252,0.06)] transition-colors cursor-default'
+                      >
+                        <div className='flex items-center gap-3 min-w-0 flex-1'>
+                          <div
+                            className='w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0'
+                            style={{
+                              background: 'rgba(255,184,48,0.1)',
+                              color: '#ffb830',
+                              border: '1px solid rgba(255,184,48,0.2)',
+                            }}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div className='min-w-0'>
+                            <div className='font-sans text-sm font-medium text-[#f0efff] truncate'>
+                              {merchant.name}
+                            </div>
+                            <div className='font-mono text-[9px] text-[#8b89b0]'>
+                              {merchant.count} {merchant.count === 1 ? 'txn' : 'txns'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className='font-display text-sm font-bold shrink-0 ml-2 text-[#ff2d78]'>
+                          {fmt(merchant.total)}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </CardContent>
               </Card>
 
