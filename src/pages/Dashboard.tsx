@@ -361,6 +361,16 @@ export default function Dashboard() {
     }));
   }, [expenses, period]);
 
+  const dayWiseTotals = useMemo(() => {
+    const dailyMap: Record<string, number> = {};
+    for (const e of expenses) {
+      dailyMap[e.date] = (dailyMap[e.date] || 0) + e.convertedAmount;
+    }
+    return Object.entries(dailyMap)
+      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // newest first
+      .map(([date, amount]) => ({ date, amount }));
+  }, [expenses]);
+
   const pieData = (stats?.byCategory ?? []).map((c, i) => ({
     name: c.category,
     value: Math.round(c.amount),
@@ -942,72 +952,125 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* ── Recent Transactions ── */}
+          {/* ── Lists Grid: Recent Transactions & Day-wise Totals ── */}
           {expenses.length > 0 && (
-            <Card
-              className='border-[rgba(124,92,252,0.12)]'
-              style={{
-                background: 'rgba(13,13,26,0.7)',
-                backdropFilter: 'blur(20px)',
-              }}
-            >
-              <CardHeader className='pb-2 px-4 pt-4'>
-                <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
-                  <div
-                    className='w-0.5 h-4 rounded-sm'
-                    style={{
-                      background: 'linear-gradient(180deg, #00d4ff, #00ff87)',
-                    }}
-                  />
-                  Recent Transactions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className='px-2 pb-3 space-y-0.5'>
-                {expenses.slice(0, 5).map((exp) => (
-                  <div
-                    key={exp.id}
-                    className='flex items-center justify-between px-2 py-2.5 rounded-xl hover:bg-[rgba(124,92,252,0.06)] transition-colors cursor-default'
-                  >
-                    <div className='flex items-center gap-2.5 min-w-0 flex-1'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <Card
+                className='border-[rgba(124,92,252,0.12)] h-full'
+                style={{
+                  background: 'rgba(13,13,26,0.7)',
+                  backdropFilter: 'blur(20px)',
+                }}
+              >
+                <CardHeader className='pb-2 px-4 pt-4'>
+                  <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
+                    <div
+                      className='w-0.5 h-4 rounded-sm'
+                      style={{
+                        background: 'linear-gradient(180deg, #00d4ff, #00ff87)',
+                      }}
+                    />
+                    Recent Transactions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='px-2 pb-3 space-y-0.5'>
+                  {expenses.slice(0, 5).map((exp) => (
+                    <div
+                      key={exp.id}
+                      className='flex items-center justify-between px-2 py-2.5 rounded-xl hover:bg-[rgba(124,92,252,0.06)] transition-colors cursor-default'
+                    >
+                      <div className='flex items-center gap-2.5 min-w-0 flex-1'>
+                        <div
+                          className='w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0'
+                          style={{
+                            background: `${CATEGORY_COLORS[exp.category] ?? '#4a4870'}15`,
+                            border: `1px solid ${CATEGORY_COLORS[exp.category] ?? '#4a4870'}30`,
+                          }}
+                        >
+                          {CATEGORY_EMOJI[exp.category] ?? '📦'}
+                        </div>
+                        <div className='min-w-0'>
+                          <div className='font-sans text-sm font-medium text-[#f0efff] truncate max-w-[140px] sm:max-w-[260px]'>
+                            {exp.title}
+                          </div>
+                          <div className='font-mono text-[9px] text-[#4a4870] flex items-center gap-1.5'>
+                            <span
+                              className='px-1.5 py-px rounded text-[8px]'
+                              style={{
+                                background: `${CATEGORY_COLORS[exp.category] ?? '#4a4870'}18`,
+                                color: CATEGORY_COLORS[exp.category] ?? '#4a4870',
+                              }}
+                            >
+                              {exp.category}
+                            </span>
+                            <span>{exp.date}</span>
+                          </div>
+                        </div>
+                      </div>
                       <div
-                        className='w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0'
+                        className='font-display text-sm font-bold shrink-0 ml-2'
                         style={{
-                          background: `${CATEGORY_COLORS[exp.category] ?? '#4a4870'}15`,
-                          border: `1px solid ${CATEGORY_COLORS[exp.category] ?? '#4a4870'}30`,
+                          color: CATEGORY_COLORS[exp.category] ?? '#9d7fff',
                         }}
                       >
-                        {CATEGORY_EMOJI[exp.category] ?? '📦'}
-                      </div>
-                      <div className='min-w-0'>
-                        <div className='font-sans text-sm font-medium text-[#f0efff] truncate max-w-[140px] sm:max-w-[260px]'>
-                          {exp.title}
-                        </div>
-                        <div className='font-mono text-[9px] text-[#4a4870] flex items-center gap-1.5'>
-                          <span
-                            className='px-1.5 py-px rounded text-[8px]'
-                            style={{
-                              background: `${CATEGORY_COLORS[exp.category] ?? '#4a4870'}18`,
-                              color: CATEGORY_COLORS[exp.category] ?? '#4a4870',
-                            }}
-                          >
-                            {exp.category}
-                          </span>
-                          <span>{exp.date}</span>
-                        </div>
+                        {fmt(exp.convertedAmount)}
                       </div>
                     </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* ── Day-wise Totals ── */}
+              <Card
+                className='border-[rgba(124,92,252,0.12)] h-full'
+                style={{
+                  background: 'rgba(13,13,26,0.7)',
+                  backdropFilter: 'blur(20px)',
+                }}
+              >
+                <CardHeader className='pb-2 px-4 pt-4'>
+                  <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
                     <div
-                      className='font-display text-sm font-bold shrink-0 ml-2'
+                      className='w-0.5 h-4 rounded-sm'
                       style={{
-                        color: CATEGORY_COLORS[exp.category] ?? '#9d7fff',
+                        background: 'linear-gradient(180deg, #ffb830, #ff2d78)',
                       }}
+                    />
+                    Day-wise Totals
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='px-2 pb-3 space-y-0.5'>
+                  {dayWiseTotals.slice(0, 5).map((day) => (
+                    <div
+                      key={day.date}
+                      className='flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[rgba(124,92,252,0.06)] transition-colors cursor-default'
                     >
-                      {fmt(exp.convertedAmount)}
+                      <div className='flex items-center gap-3'>
+                        <div
+                          className='w-8 h-8 rounded-xl flex items-center justify-center shrink-0'
+                          style={{
+                            background: 'rgba(124,92,252,0.15)',
+                            border: '1px solid rgba(124,92,252,0.3)',
+                          }}
+                        >
+                          <Calendar className='w-4 h-4 text-[#7c5cfc]' />
+                        </div>
+                        <div className='font-sans text-sm font-medium text-[#f0efff]'>
+                          {new Date(day.date).toLocaleDateString('en-IN', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </div>
+                      </div>
+                      <div className='font-display text-sm font-bold text-[#f0efff]'>
+                        {fmt(day.amount)}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* ── Loading skeletons ── */}
