@@ -21,10 +21,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  BarChart,
-  Bar,
-  RadialBarChart,
-  RadialBar,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
