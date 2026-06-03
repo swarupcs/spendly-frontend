@@ -455,7 +455,7 @@ export default function Dashboard() {
   const { data: patterns } = useSpendingPatterns();
   const { data: recs } = useBudgetRecommendations();
   
-  const { data: prevStatsData, isLoading: prevStatsLoading } = useExpenseStats(
+  const { data: prevStatsData } = useExpenseStats(
     prevFrom,
     prevTo,
   );
