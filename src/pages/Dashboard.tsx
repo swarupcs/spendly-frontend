@@ -40,6 +40,7 @@ import {
   ArrowDownCircle,
   X,
   FastForward,
+  Lock,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -494,6 +495,12 @@ export default function Dashboard() {
   const trueDailyAvg = (stats?.total ?? 0) / daysElapsed;
   const projectedTotal = trueDailyAvg * daysInPeriod;
   
+  // Fixed vs Flex calculation
+  const FIXED_CATEGORIES = ['UTILITIES', 'HEALTH', 'EDUCATION'];
+  const fixedTotal = expenses
+    .filter((e) => FIXED_CATEGORIES.includes(e.category))
+    .reduce((sum, e) => sum + e.convertedAmount, 0);
+  
   let maxTxn = 0;
   let minTxn = Infinity;
   for (const e of expenses) {
@@ -761,11 +768,27 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
             <StatCard
+              label='Smallest Expense'
+              value={fmt(minTxn)}
+              icon={ArrowDownCircle}
+              sub='Single min'
+              accent='#5b8fff'
+              isLoading={isLoading}
+            />
+            <StatCard
               label='Projected Spend'
               value={fmt(projectedTotal)}
               icon={FastForward}
               sub='End of period est.'
-              accent='#5b8fff'
+              accent='#7c5cfc'
+              isLoading={isLoading}
+            />
+            <StatCard
+              label='Fixed Costs'
+              value={fmt(fixedTotal)}
+              icon={Lock}
+              sub={`${Math.round((fixedTotal / (stats?.total || 1)) * 100)}% of total`}
+              accent='#00d4ff'
               isLoading={isLoading}
             />
           </div>
