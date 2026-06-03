@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useNetWorth, useUpdateNetWorth,
   useZeroBasedBudget, useApplyZeroBasedBudget,
@@ -26,10 +26,11 @@ import { Wallet, FileText,
   Store, Cpu, CheckCircle2,
   AlertCircle, BarChart2, Loader2,
   LineChart, TrendingUp, PiggyBank,
-  Calculator, Percent,
+  Calculator, Percent, Plus, Trash2,
+  Landmark, Building2,
 } from 'lucide-react';
 
-type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats' | 'savings';
+type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats' | 'savings' | 'portfolio';
 
 function TabPill({ label, icon: Icon, active, onClick }: {
   id: Tab; label: string; icon: React.ElementType; active: boolean; onClick: () => void;
@@ -836,12 +837,372 @@ function SavingsSimulatorTab() {
   );
 }
 
+// ─── Portfolio / Asset Tracker Tab ───────────────────────────────────────────────────
+
+type AssetType = 'savings' | 'fd' | 'ppf' | 'epf' | 'mutual_fund' | 'stocks' | 'gold' | 'property' | 'crypto' | 'other';
+
+interface Asset {
+  id: string;
+  name: string;
+  bank: string;
+  type: AssetType;
+  amount: number;
+  interestRate?: number;    // for FD/PPF
+  maturityDate?: string;    // for FD
+  note?: string;
+}
+
+const ASSET_CONFIG: Record<AssetType, { label: string; color: string; emoji: string }> = {
+  savings:     { label: 'Savings Account', color: '#00d4ff', emoji: '🏦' },
+  fd:          { label: 'Fixed Deposit',   color: '#7c5cfc', emoji: '🔒' },
+  ppf:         { label: 'PPF',             color: '#00ff87', emoji: '🏛️' },
+  epf:         { label: 'EPF / PF',        color: '#9d7fff', emoji: '💼' },
+  mutual_fund: { label: 'Mutual Fund',     color: '#ffb830', emoji: '📊' },
+  stocks:      { label: 'Stocks',          color: '#ff6b9d', emoji: '📈' },
+  gold:        { label: 'Gold',            color: '#ffd700', emoji: '🥇' },
+  property:    { label: 'Property',        color: '#5b8fff', emoji: '🏠' },
+  crypto:      { label: 'Crypto',          color: '#ff2d78', emoji: '₿' },
+  other:       { label: 'Other',           color: '#4a4870', emoji: '📦' },
+};
+
+const STORAGE_KEY = 'spendly_portfolio_assets';
+
+function generateId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function PortfolioTab() {
+  const fmt = useFmt();
+  const { mutate: updateNetWorth } = useUpdateNetWorth();
+
+  const [assets, setAssets] = useState<Asset[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  const [form, setForm] = useState<Partial<Asset>>({
+    type: 'savings',
+    name: '',
+    bank: '',
+    amount: 0,
+  });
+  const [showForm, setShowForm] = useState(false);
+  const [synced, setSynced] = useState(false);
+
+  // Persist to localStorage
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(assets));
+  }, [assets]);
+
+  const addAsset = () => {
+    if (!form.name || !form.amount) return;
+    const newAsset: Asset = {
+      id: generateId(),
+      name: form.name!,
+      bank: form.bank || '',
+      type: form.type as AssetType,
+      amount: form.amount!,
+      interestRate: form.interestRate,
+      maturityDate: form.maturityDate,
+      note: form.note,
+    };
+    setAssets((prev) => [...prev, newAsset]);
+    setForm({ type: 'savings', name: '', bank: '', amount: 0 });
+    setShowForm(false);
+  };
+
+  const removeAsset = (id: string) => setAssets((prev) => prev.filter((a) => a.id !== id));
+
+  // Totals
+  const totalPortfolio = assets.reduce((s, a) => s + a.amount, 0);
+  const byType = Object.entries(
+    assets.reduce<Record<string, number>>((acc, a) => {
+      acc[a.type] = (acc[a.type] || 0) + a.amount;
+      return acc;
+    }, {})
+  ).sort(([, a], [, b]) => b - a);
+
+  const syncNetWorth = () => {
+    updateNetWorth({ netWorthAssets: Math.round(totalPortfolio) }, {
+      onSuccess: () => { setSynced(true); setTimeout(() => setSynced(false), 2500); },
+    });
+  };
+
+  const pieData = byType.map(([type, amount]) => ({
+    name: ASSET_CONFIG[type as AssetType]?.label ?? type,
+    value: Math.round(amount),
+    color: ASSET_CONFIG[type as AssetType]?.color ?? '#9d7fff',
+  }));
+
+  return (
+    <div className='space-y-4'>
+      {/* Header summary */}
+      <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(124,92,252,0.2)' }}>
+        <CardContent className='p-5'>
+          <div className='flex items-start justify-between'>
+            <div>
+              <p className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest mb-1 flex items-center gap-1.5'>
+                <Landmark className='w-3 h-3' /> Total Portfolio Value
+              </p>
+              <p className='font-display text-4xl font-black text-[#7c5cfc]'>{fmt(totalPortfolio)}</p>
+              <p className='font-mono text-[10px] text-[#8b89b0] mt-1'>{assets.length} asset{assets.length !== 1 ? 's' : ''} tracked</p>
+            </div>
+            <div className='flex gap-2'>
+              <Button
+                onClick={syncNetWorth}
+                disabled={assets.length === 0}
+                className='h-9 text-white text-xs font-mono gap-1.5'
+                style={{ background: 'linear-gradient(135deg, #00ff87, #00d4ff)', color: '#080810' }}
+              >
+                {synced ? <><CheckCircle2 className='w-3.5 h-3.5' />Synced!</> : 'Sync to Net Worth'}
+              </Button>
+              <Button
+                onClick={() => setShowForm((v) => !v)}
+                className='h-9 gap-1.5 text-white font-mono text-xs'
+                style={{ background: 'linear-gradient(135deg, #7c5cfc, #00d4ff)' }}
+              >
+                <Plus className='w-3.5 h-3.5' /> Add Asset
+              </Button>
+            </div>
+          </div>
+
+          {/* Breakdown by type */}
+          {byType.length > 0 && (
+            <div className='flex flex-wrap gap-2 mt-4'>
+              {byType.map(([type, amt]) => {
+                const cfg = ASSET_CONFIG[type as AssetType];
+                const pct = totalPortfolio > 0 ? Math.round((amt / totalPortfolio) * 100) : 0;
+                return (
+                  <div key={type}
+                    className='flex items-center gap-1.5 px-2.5 py-1 rounded-full'
+                    style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}30` }}
+                  >
+                    <span>{cfg.emoji}</span>
+                    <span className='font-mono text-[9px]' style={{ color: cfg.color }}>{cfg.label}</span>
+                    <span className='font-mono text-[9px] text-[#4a4870]'>{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pie-style allocation bar */}
+      {pieData.length > 1 && (
+        <div className='h-3 rounded-full overflow-hidden flex gap-px'>
+          {pieData.map((d) => (
+            <div
+              key={d.name}
+              className='h-full transition-all duration-700'
+              style={{
+                width: `${totalPortfolio > 0 ? (d.value / totalPortfolio) * 100 : 0}%`,
+                background: d.color,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Add Asset Form */}
+      {showForm && (
+        <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(0,212,255,0.2)' }}>
+          <CardHeader className='pb-2 px-4 pt-4'>
+            <CardTitle className='text-sm font-display text-[#00d4ff] flex items-center gap-2'>
+              <Plus className='w-4 h-4' /> Add New Asset
+            </CardTitle>
+          </CardHeader>
+          <CardContent className='px-4 pb-4 space-y-3'>
+            {/* Type Selector */}
+            <div>
+              <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest mb-2 block'>Asset Type</Label>
+              <div className='flex flex-wrap gap-2'>
+                {(Object.keys(ASSET_CONFIG) as AssetType[]).map((t) => {
+                  const cfg = ASSET_CONFIG[t];
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => setForm((p) => ({ ...p, type: t }))}
+                      className='flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono transition-all'
+                      style={{
+                        background: form.type === t ? `${cfg.color}20` : 'rgba(124,92,252,0.05)',
+                        border: `1px solid ${form.type === t ? cfg.color : 'rgba(124,92,252,0.12)'}`,
+                        color: form.type === t ? cfg.color : '#4a4870',
+                      }}
+                    >
+                      {cfg.emoji} {cfg.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+              <div className='space-y-1.5'>
+                <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Name / Description</Label>
+                <Input
+                  placeholder='e.g. SBI Savings Account'
+                  value={form.name ?? ''}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]'
+                />
+              </div>
+              <div className='space-y-1.5'>
+                <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Bank / Institution</Label>
+                <Input
+                  placeholder='e.g. SBI, HDFC, LIC'
+                  value={form.bank ?? ''}
+                  onChange={(e) => setForm((p) => ({ ...p, bank: e.target.value }))}
+                  className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]'
+                />
+              </div>
+              <div className='space-y-1.5'>
+                <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Current Value / Balance (₹)</Label>
+                <Input
+                  type='number'
+                  placeholder='e.g. 250000'
+                  value={form.amount || ''}
+                  onChange={(e) => setForm((p) => ({ ...p, amount: parseFloat(e.target.value) || 0 }))}
+                  className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]'
+                />
+              </div>
+              {(form.type === 'fd' || form.type === 'ppf' || form.type === 'epf') && (
+                <div className='space-y-1.5'>
+                  <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Interest Rate (% p.a.)</Label>
+                  <Input
+                    type='number'
+                    placeholder='e.g. 7.1'
+                    value={form.interestRate ?? ''}
+                    onChange={(e) => setForm((p) => ({ ...p, interestRate: parseFloat(e.target.value) || undefined }))}
+                    className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]'
+                  />
+                </div>
+              )}
+              {form.type === 'fd' && (
+                <div className='space-y-1.5'>
+                  <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Maturity Date</Label>
+                  <Input
+                    type='date'
+                    value={form.maturityDate ?? ''}
+                    onChange={(e) => setForm((p) => ({ ...p, maturityDate: e.target.value }))}
+                    className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]'
+                    style={{ colorScheme: 'dark' }}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className='flex gap-2'>
+              <Button
+                onClick={addAsset}
+                disabled={!form.name || !form.amount}
+                className='h-9 gap-1.5 text-white font-mono text-xs'
+                style={{ background: 'linear-gradient(135deg, #7c5cfc, #00d4ff)' }}
+              >
+                <CheckCircle2 className='w-3.5 h-3.5' /> Save Asset
+              </Button>
+              <Button
+                onClick={() => setShowForm(false)}
+                variant='outline'
+                className='h-9 font-mono text-xs border-[rgba(124,92,252,0.2)] text-[#4a4870]'
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Asset List */}
+      {assets.length === 0 && !showForm && (
+        <div className='flex flex-col items-center justify-center py-16 text-center'>
+          <div className='text-5xl mb-4'>🏦</div>
+          <p className='font-display text-lg font-bold text-[#f0efff] mb-2'>No Assets Added Yet</p>
+          <p className='text-[#4a4870] text-sm mb-4'>Add your bank accounts, FDs, PPF, mutual funds, and more.</p>
+          <Button onClick={() => setShowForm(true)} className='h-9 gap-1.5 text-white font-mono text-xs'
+            style={{ background: 'linear-gradient(135deg, #7c5cfc, #00d4ff)' }}>
+            <Plus className='w-3.5 h-3.5' /> Add Your First Asset
+          </Button>
+        </div>
+      )}
+
+      {assets.length > 0 && (
+        <div className='space-y-2'>
+          {Object.entries(
+            assets.reduce<Record<AssetType, Asset[]>>((acc, a) => {
+              if (!acc[a.type]) acc[a.type] = [];
+              acc[a.type].push(a);
+              return acc;
+            }, {} as Record<AssetType, Asset[]>)
+          ).map(([type, typeAssets]) => {
+            const cfg = ASSET_CONFIG[type as AssetType];
+            const typeTotal = typeAssets.reduce((s, a) => s + a.amount, 0);
+            return (
+              <Card key={type} style={{ background: 'rgba(13,13,26,0.8)', border: `1px solid ${cfg.color}18` }}>
+                <CardHeader className='pb-1 px-4 pt-3'>
+                  <CardTitle className='text-xs font-display flex items-center justify-between'>
+                    <span className='flex items-center gap-2' style={{ color: cfg.color }}>
+                      <span>{cfg.emoji}</span> {cfg.label}
+                    </span>
+                    <span className='font-display text-sm font-bold' style={{ color: cfg.color }}>{fmt(typeTotal)}</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='px-4 pb-3 space-y-2'>
+                  {typeAssets.map((asset) => (
+                    <div key={asset.id}
+                      className='flex items-center justify-between p-2.5 rounded-xl group'
+                      style={{ background: `${cfg.color}06`, border: `1px solid ${cfg.color}15` }}
+                    >
+                      <div className='flex items-center gap-2.5 min-w-0 flex-1'>
+                        <Building2 className='w-4 h-4 shrink-0' style={{ color: cfg.color }} />
+                        <div className='min-w-0'>
+                          <p className='font-sans text-sm font-medium text-[#f0efff] truncate'>{asset.name}</p>
+                          <div className='flex items-center gap-2 flex-wrap'>
+                            {asset.bank && <span className='font-mono text-[9px] text-[#4a4870]'>{asset.bank}</span>}
+                            {asset.interestRate && (
+                              <span className='font-mono text-[9px] px-1.5 py-px rounded'
+                                style={{ background: `${cfg.color}15`, color: cfg.color }}>
+                                {asset.interestRate}% p.a.
+                              </span>
+                            )}
+                            {asset.maturityDate && (
+                              <span className='font-mono text-[9px] text-[#4a4870]'>
+                                Matures: {new Date(asset.maturityDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className='flex items-center gap-3 shrink-0'>
+                        <span className='font-display text-sm font-bold' style={{ color: cfg.color }}>{fmt(asset.amount)}</span>
+                        <button
+                          onClick={() => removeAsset(asset.id)}
+                          className='opacity-0 group-hover:opacity-100 transition-opacity text-[#ff2d78] hover:text-[#ff5555]'
+                        >
+                          <Trash2 className='w-3.5 h-3.5' />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<Tab>('networth');
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'networth', label: 'Net Worth', icon: Wallet },
+    { id: 'portfolio', label: 'Portfolio', icon: Landmark },
     { id: 'zero-budget', label: 'Zero Budget', icon: BarChart2 },
     { id: 'savings', label: 'Savings Sim', icon: PiggyBank },
     { id: 'tax', label: 'Tax Summary', icon: FileText },
@@ -867,6 +1228,7 @@ export default function FinancePage() {
       <div className='flex-1 min-h-0' style={{ overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
         <div className='p-4 sm:p-6 pb-8'>
           {activeTab === 'networth' && <NetWorthTab />}
+          {activeTab === 'portfolio' && <PortfolioTab />}
           {activeTab === 'zero-budget' && <ZeroBudgetTab />}
           {activeTab === 'savings' && <SavingsSimulatorTab />}
           {activeTab === 'tax' && <TaxTab />}
