@@ -8,7 +8,11 @@ import {
 } from '@/services/finance.service';
 import { useFmt } from '@/hooks/useCurrency';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, Tooltip as ReTooltip,
+  ResponsiveContainer, ResponsiveContainer as RC,
+  ReferenceLine,
+  BarChart, Bar, Cell,
 } from 'recharts';
 import { useUserSettings } from '@/services/auth.service';
 import {
@@ -24,10 +28,6 @@ import { Wallet, FileText,
   LineChart, TrendingUp, PiggyBank,
   Calculator, Percent,
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer as RC, Cell,
-} from 'recharts';
 
 type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats' | 'savings';
 
