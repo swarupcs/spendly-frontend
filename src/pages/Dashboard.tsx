@@ -19,6 +19,8 @@ import {
   Pie,
   AreaChart,
   Area,
+  LineChart,
+  Line,
 } from 'recharts';
 import {
   TrendingDown,
@@ -222,6 +224,90 @@ function PeriodDropdown({
   );
 }
 
+// ─── Chart Type Dropdown ──────────────────────────────────────────────────────
+
+type ChartType = 'line' | 'bar' | 'area';
+
+const CHART_TYPE_OPTIONS: { value: ChartType; label: string }[] = [
+  { value: 'line', label: 'Line' },
+  { value: 'bar', label: 'Bar' },
+  { value: 'area', label: 'Area' },
+];
+
+function ChartTypeDropdown({
+  value,
+  onChange,
+}: {
+  value: ChartType;
+  onChange: (t: ChartType) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = CHART_TYPE_OPTIONS.find((o) => o.value === value)!;
+
+  return (
+    <div className='relative'>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className='flex items-center gap-1.5 px-2 py-1 rounded-lg font-mono text-[9px] uppercase tracking-wider transition-all'
+        style={{
+          background: 'rgba(124,92,252,0.1)',
+          border: '1px solid rgba(124,92,252,0.25)',
+          color: '#9d7fff',
+        }}
+      >
+        {current.label}
+        <ChevronDown
+          className='w-3 h-3 transition-transform'
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+
+      {open && (
+        <>
+          <div className='fixed inset-0 z-10' onClick={() => setOpen(false)} />
+          <div
+            className='absolute right-0 top-full mt-1.5 z-20 rounded-xl overflow-hidden py-1 min-w-[100px]'
+            style={{
+              background: '#0d0d1a',
+              border: '1px solid rgba(124,92,252,0.25)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            }}
+          >
+            {CHART_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  onChange(opt.value);
+                  setOpen(false);
+                }}
+                className='w-full text-left px-3 py-2 font-mono text-[9px] uppercase tracking-wider transition-colors'
+                style={{
+                  color: opt.value === value ? '#9d7fff' : '#8b89b0',
+                  background:
+                    opt.value === value
+                      ? 'rgba(124,92,252,0.12)'
+                      : 'transparent',
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = 'rgba(124,92,252,0.08)')
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background =
+                    opt.value === value
+                      ? 'rgba(124,92,252,0.12)'
+                      : 'transparent')
+                }
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
 function StatCard({
@@ -290,6 +376,7 @@ export default function Dashboard() {
   const user = useAuthStore((s) => s.user);
   const fmt = useFmt();
   const [period, setPeriod] = useState<Period>('monthly');
+  const [dayWiseChartType, setDayWiseChartType] = useState<ChartType>('bar');
 
   const {
     from,
@@ -1038,15 +1125,21 @@ export default function Dashboard() {
                 }}
               >
                 <CardHeader className='pb-2 px-4 pt-4'>
-                  <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
-                    <div
-                      className='w-0.5 h-4 rounded-sm'
-                      style={{
-                        background: 'linear-gradient(180deg, #ffb830, #ff2d78)',
-                      }}
+                  <div className='flex items-center justify-between'>
+                    <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
+                      <div
+                        className='w-0.5 h-4 rounded-sm'
+                        style={{
+                          background: 'linear-gradient(180deg, #ffb830, #ff2d78)',
+                        }}
+                      />
+                      Day-wise Totals
+                    </CardTitle>
+                    <ChartTypeDropdown
+                      value={dayWiseChartType}
+                      onChange={setDayWiseChartType}
                     />
-                    Day-wise Totals
-                  </CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent className='px-2 pb-4'>
                   {dayWiseTotals.length === 0 ? (
@@ -1055,53 +1148,103 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <ResponsiveContainer width='100%' height={210}>
-                      <AreaChart
-                        data={dayWiseTotals}
-                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                      >
-                        <defs>
-                          <linearGradient id='colorAmount' x1='0' y1='0' x2='0' y2='1'>
-                            <stop offset='5%' stopColor='#ff2d78' stopOpacity={0.3} />
-                            <stop offset='95%' stopColor='#ff2d78' stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray='3 3'
-                          stroke='rgba(124,92,252,0.08)'
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey='date'
-                          tick={{
-                            fontSize: 9,
-                            fill: '#4a4870',
-                            fontFamily: '"JetBrains Mono", monospace',
-                          }}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <YAxis
-                          tick={{
-                            fontSize: 9,
-                            fill: '#4a4870',
-                            fontFamily: '"JetBrains Mono", monospace',
-                          }}
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={(v) =>
-                            v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)
-                          }
-                        />
-                        <Tooltip {...tooltipStyle} />
-                        <Area
-                          type='monotone'
-                          dataKey='amount'
-                          stroke='#ff2d78'
-                          strokeWidth={2}
-                          fillOpacity={1}
-                          fill='url(#colorAmount)'
-                        />
-                      </AreaChart>
+                      {dayWiseChartType === 'bar' ? (
+                        <BarChart
+                          data={dayWiseTotals}
+                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                          barCategoryGap='20%'
+                        >
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            stroke='rgba(124,92,252,0.08)'
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey='date'
+                            tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                          />
+                          <Tooltip {...tooltipStyle} />
+                          <Bar dataKey='amount' radius={[4, 4, 0, 0]} fill='#ff2d78' maxBarSize={30} />
+                        </BarChart>
+                      ) : dayWiseChartType === 'line' ? (
+                        <LineChart
+                          data={dayWiseTotals}
+                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            stroke='rgba(124,92,252,0.08)'
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey='date'
+                            tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                          />
+                          <Tooltip {...tooltipStyle} />
+                          <Line
+                            type='monotone'
+                            dataKey='amount'
+                            stroke='#ff2d78'
+                            strokeWidth={2}
+                            dot={{ fill: '#ff2d78', r: 3, strokeWidth: 0 }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </LineChart>
+                      ) : (
+                        <AreaChart
+                          data={dayWiseTotals}
+                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id='colorAmount' x1='0' y1='0' x2='0' y2='1'>
+                              <stop offset='5%' stopColor='#ff2d78' stopOpacity={0.3} />
+                              <stop offset='95%' stopColor='#ff2d78' stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray='3 3'
+                            stroke='rgba(124,92,252,0.08)'
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey='date'
+                            tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                          />
+                          <Tooltip {...tooltipStyle} />
+                          <Area
+                            type='monotone'
+                            dataKey='amount'
+                            stroke='#ff2d78'
+                            strokeWidth={2}
+                            fillOpacity={1}
+                            fill='url(#colorAmount)'
+                          />
+                        </AreaChart>
+                      )}
                     </ResponsiveContainer>
                   )}
                 </CardContent>
