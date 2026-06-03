@@ -552,6 +552,9 @@ export default function Dashboard() {
   const fixedTotal = expenses
     .filter((e) => FIXED_CATEGORIES.includes(e.category))
     .reduce((sum, e) => sum + e.convertedAmount, 0);
+  const flexTotal = (stats?.total ?? 0) - fixedTotal;
+  const fixedPct = stats?.total ? (fixedTotal / stats.total) * 100 : 0;
+  const flexPct = stats?.total ? (flexTotal / stats.total) * 100 : 0;
   
   let maxTxn = 0;
   let minTxn = Infinity;
@@ -844,6 +847,55 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
           </div>
+
+          {/* ── Discretionary vs Fixed ── */}
+          {!isLoading && expenses.length > 0 && (
+            <Card
+              className='border-[rgba(124,92,252,0.12)] mb-4'
+              style={{
+                background: 'rgba(13,13,26,0.7)',
+                backdropFilter: 'blur(20px)',
+              }}
+            >
+              <CardContent className='p-4 sm:p-5'>
+                <div className='flex items-center justify-between mb-4'>
+                  <h3 className='font-display text-[#f0efff] text-sm font-semibold flex items-center gap-2'>
+                    <div className='w-0.5 h-4 rounded-sm' style={{ background: 'linear-gradient(180deg, #00d4ff, #ff2d78)' }} />
+                    Discretionary vs. Fixed
+                  </h3>
+                </div>
+
+                <div className='relative h-4 rounded-full overflow-hidden flex' style={{ background: 'rgba(124,92,252,0.1)' }}>
+                  <div
+                    className='h-full transition-all duration-500'
+                    style={{ width: `${fixedPct}%`, background: 'linear-gradient(90deg, #00d4ff, #00ff87)' }}
+                  />
+                  <div
+                    className='h-full transition-all duration-500'
+                    style={{ width: `${flexPct}%`, background: 'linear-gradient(90deg, #ff2d78, #ffb830)' }}
+                  />
+                </div>
+
+                <div className='flex items-center justify-between mt-3 px-1'>
+                  <div className='flex flex-col'>
+                    <span className='flex items-center gap-1.5 font-mono text-[10px] text-[#4a4870] uppercase tracking-wider mb-1'>
+                      <div className='w-2 h-2 rounded-full' style={{ background: '#00d4ff' }} />
+                      Fixed Costs
+                    </span>
+                    <span className='font-display text-[#00ff87] font-semibold'>{fmt(fixedTotal)} <span className='text-[10px] text-[#4a4870] font-mono'>({Math.round(fixedPct)}%)</span></span>
+                  </div>
+                  
+                  <div className='flex flex-col text-right items-end'>
+                    <span className='flex items-center gap-1.5 font-mono text-[10px] text-[#4a4870] uppercase tracking-wider mb-1'>
+                      <div className='w-2 h-2 rounded-full' style={{ background: '#ff2d78' }} />
+                      Discretionary
+                    </span>
+                    <span className='font-display text-[#ffb830] font-semibold'>{fmt(flexTotal)} <span className='text-[10px] text-[#4a4870] font-mono'>({Math.round(flexPct)}%)</span></span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Budget Overview (always current month) ── */}
           {budgetOverview && budgetOverview.length > 0 && (
