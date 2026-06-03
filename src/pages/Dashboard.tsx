@@ -2,6 +2,7 @@ import { useExpenses, useExpenseStats } from '@/services/expenses.service';
 import { useBudgetOverview } from '@/services/budget.service';
 import { useGoals } from '@/services/goals.service';
 import { useAnomalies, useDismissAnomaly } from '@/services/anomaly.service';
+import { useHealthScore, useSpendingPatterns, useBudgetRecommendations } from '@/services/insights.service';
 import { useAuthStore } from '@/store/auth.store';
 import { useFmt } from '@/hooks/useCurrency';
 import { useMemo, useState } from 'react';
@@ -42,6 +43,8 @@ import {
   X,
   FastForward,
   Lock,
+  Brain,
+  Lightbulb,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -448,6 +451,10 @@ export default function Dashboard() {
     to,
   );
   
+  const { data: health } = useHealthScore();
+  const { data: patterns } = useSpendingPatterns();
+  const { data: recs } = useBudgetRecommendations();
+  
   const { data: prevStatsData, isLoading: prevStatsLoading } = useExpenseStats(
     prevFrom,
     prevTo,
@@ -742,6 +749,97 @@ export default function Dashboard() {
               </span>
             </span>
           </div>
+
+          {/* ── Smart AI Insights ── */}
+          {!statsLoading && (health || patterns || (recs && recs.length > 0)) && (
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              {/* Financial Health Score */}
+              {health && (
+                <Card
+                  className='border-[rgba(124,92,252,0.12)] relative overflow-hidden'
+                  style={{
+                    background: 'rgba(13,13,26,0.7)',
+                    backdropFilter: 'blur(20px)',
+                  }}
+                >
+                  <div className='absolute top-0 right-0 w-32 h-32 bg-[rgba(124,92,252,0.1)] rounded-bl-full pointer-events-none' />
+                  <CardContent className='p-4 sm:p-5 flex items-center justify-between'>
+                    <div className='flex-1 pr-2 min-w-0'>
+                      <h3 className='font-display text-[#f0efff] text-sm font-semibold flex items-center gap-2 mb-1 truncate'>
+                        <Brain className='w-4 h-4 text-[#7c5cfc]' /> AI Health Score
+                      </h3>
+                      <p className='font-mono text-[9px] text-[#8b89b0] mb-2 line-clamp-2 leading-tight'>{health.recommendations[0]}</p>
+                      <Link to='/insights' className='text-[#00d4ff] text-[10px] font-mono hover:underline inline-flex items-center gap-1'>
+                        View Details <ArrowRight className='w-3 h-3' />
+                      </Link>
+                    </div>
+                    <div className='text-right shrink-0 pl-2'>
+                      <div className='font-display text-3xl font-black' style={{ color: health.score >= 80 ? '#00ff87' : health.score >= 60 ? '#00d4ff' : '#ffb830' }}>
+                        {health.score}
+                      </div>
+                      <div className='font-mono text-[10px] font-bold text-[#4a4870] uppercase tracking-wider'>Grade {health.grade}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Spending Pattern */}
+              {patterns && (
+                <Card
+                  className='border-[rgba(124,92,252,0.12)] relative overflow-hidden'
+                  style={{
+                    background: 'rgba(13,13,26,0.7)',
+                    backdropFilter: 'blur(20px)',
+                  }}
+                >
+                  <CardContent className='p-4 sm:p-5'>
+                    <h3 className='font-display text-[#f0efff] text-sm font-semibold flex items-center gap-2 mb-3'>
+                      <Activity className='w-4 h-4 text-[#00d4ff]' /> Top Spending Pattern
+                    </h3>
+                    <div className='flex items-center gap-3'>
+                      <div className='w-10 h-10 rounded-xl bg-[rgba(0,212,255,0.1)] flex items-center justify-center shrink-0 border border-[rgba(0,212,255,0.2)]'>
+                        <Calendar className='w-5 h-5 text-[#00d4ff]' />
+                      </div>
+                      <div className='min-w-0'>
+                        <p className='font-sans text-xs text-[#d4d2f0] truncate'>You spend the most on</p>
+                        <p className='font-display text-lg font-bold text-[#00d4ff] truncate'>{patterns.topSpendingDayOfWeek}s</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Budget Recommendation */}
+              {recs && recs.length > 0 && (
+                <Card
+                  className='border-[rgba(124,92,252,0.12)] relative overflow-hidden'
+                  style={{
+                    background: 'rgba(13,13,26,0.7)',
+                    backdropFilter: 'blur(20px)',
+                  }}
+                >
+                  <CardContent className='p-4 sm:p-5'>
+                    <h3 className='font-display text-[#f0efff] text-sm font-semibold flex items-center gap-2 mb-3'>
+                      <Lightbulb className='w-4 h-4 text-[#ffb830]' /> Smart Suggestion
+                    </h3>
+                    <div className='flex items-center gap-3'>
+                      <div className='w-10 h-10 rounded-xl bg-[rgba(255,184,48,0.1)] flex items-center justify-center shrink-0 border border-[rgba(255,184,48,0.2)]'>
+                        <Target className='w-5 h-5 text-[#ffb830]' />
+                      </div>
+                      <div className='min-w-0'>
+                        <p className='font-sans text-xs text-[#d4d2f0] truncate'>
+                          {recs[0].action === 'INCREASE' ? 'Increase budget for' : recs[0].action === 'DECREASE' ? 'Decrease budget for' : 'Set a budget for'} <span className='font-bold text-[#f0efff]'>{recs[0].category}</span>
+                        </p>
+                        <p className='font-mono text-[10px] text-[#ffb830]'>
+                          Suggested: {fmt(recs[0].recommendedBudget)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* ── Anomaly Alerts ── */}
           {anomalies && anomalies.length > 0 && (
