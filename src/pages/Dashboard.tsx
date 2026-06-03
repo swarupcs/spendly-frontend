@@ -17,6 +17,8 @@ import {
   Cell,
   PieChart,
   Pie,
+  AreaChart,
+  Area,
 } from 'recharts';
 import {
   TrendingDown,
@@ -367,8 +369,15 @@ export default function Dashboard() {
       dailyMap[e.date] = (dailyMap[e.date] || 0) + e.convertedAmount;
     }
     return Object.entries(dailyMap)
-      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA)) // newest first
-      .map(([date, amount]) => ({ date, amount }));
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB)) // oldest first for chart
+      .map(([date, amount]) => {
+        const d = new Date(date);
+        const shortDate = d.toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+        });
+        return { date: shortDate, amount: Math.round(amount) };
+      });
   }, [expenses]);
 
   const pieData = (stats?.byCategory ?? []).map((c, i) => ({
@@ -1039,35 +1048,62 @@ export default function Dashboard() {
                     Day-wise Totals
                   </CardTitle>
                 </CardHeader>
-                <CardContent className='px-2 pb-3 space-y-0.5'>
-                  {dayWiseTotals.slice(0, 5).map((day) => (
-                    <div
-                      key={day.date}
-                      className='flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[rgba(124,92,252,0.06)] transition-colors cursor-default'
-                    >
-                      <div className='flex items-center gap-3'>
-                        <div
-                          className='w-8 h-8 rounded-xl flex items-center justify-center shrink-0'
-                          style={{
-                            background: 'rgba(124,92,252,0.15)',
-                            border: '1px solid rgba(124,92,252,0.3)',
-                          }}
-                        >
-                          <Calendar className='w-4 h-4 text-[#7c5cfc]' />
-                        </div>
-                        <div className='font-sans text-sm font-medium text-[#f0efff]'>
-                          {new Date(day.date).toLocaleDateString('en-IN', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </div>
-                      </div>
-                      <div className='font-display text-sm font-bold text-[#f0efff]'>
-                        {fmt(day.amount)}
-                      </div>
+                <CardContent className='px-2 pb-4'>
+                  {dayWiseTotals.length === 0 ? (
+                    <div className='h-40 flex items-center justify-center text-[#4a4870] text-sm'>
+                      No data for this period
                     </div>
-                  ))}
+                  ) : (
+                    <ResponsiveContainer width='100%' height={210}>
+                      <AreaChart
+                        data={dayWiseTotals}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id='colorAmount' x1='0' y1='0' x2='0' y2='1'>
+                            <stop offset='5%' stopColor='#ff2d78' stopOpacity={0.3} />
+                            <stop offset='95%' stopColor='#ff2d78' stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray='3 3'
+                          stroke='rgba(124,92,252,0.08)'
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey='date'
+                          tick={{
+                            fontSize: 9,
+                            fill: '#4a4870',
+                            fontFamily: '"JetBrains Mono", monospace',
+                          }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          tick={{
+                            fontSize: 9,
+                            fill: '#4a4870',
+                            fontFamily: '"JetBrains Mono", monospace',
+                          }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) =>
+                            v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)
+                          }
+                        />
+                        <Tooltip {...tooltipStyle} />
+                        <Area
+                          type='monotone'
+                          dataKey='amount'
+                          stroke='#ff2d78'
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill='url(#colorAmount)'
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
             </div>
