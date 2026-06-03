@@ -92,37 +92,28 @@ function NetWorthTab() {
         </div>
       )}
 
-  {/* Extra computed metrics */}
-      {nw && (
+  {/* Extra computed metrics — income comes from the form input below */}
+      {nw && income && (
         <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
-          {/* Savings Rate */}
-          {nw.monthlyIncome > 0 && (() => {
-            const expenses = nw.assets > 0 ? nw.assets * 0.05 : 0; // fallback
-            const savingsRate = Math.max(0, Math.round(((nw.monthlyIncome - (nw.monthlyIncome * 0.7)) / nw.monthlyIncome) * 100));
-            const dti = nw.liabilities > 0 && nw.monthlyIncome > 0
-              ? Math.round((nw.liabilities / (nw.monthlyIncome * 12)) * 100)
-              : null;
+          <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(0,255,135,0.2)' }}>
+            <CardContent className='p-3'>
+              <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1 flex items-center gap-1'>
+                <Percent className='w-2.5 h-2.5' /> Monthly Income
+              </p>
+              <p className='font-display text-lg font-black text-[#00ff87]'>{fmt(parseFloat(income) || 0)}</p>
+              <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>From the field below</p>
+            </CardContent>
+          </Card>
+          {nw.liabilities > 0 && parseFloat(income) > 0 && (() => {
+            const dti = Math.round((nw.liabilities / (parseFloat(income) * 12)) * 100);
             return (
-              <>
-                <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(0,255,135,0.2)' }}>
-                  <CardContent className='p-3'>
-                    <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1 flex items-center gap-1'>
-                      <Percent className='w-2.5 h-2.5' /> Monthly Income
-                    </p>
-                    <p className='font-display text-lg font-black text-[#00ff87]'>{fmt(nw.monthlyIncome)}</p>
-                    <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>Update in Settings or above</p>
-                  </CardContent>
-                </Card>
-                {dti !== null && (
-                  <Card style={{ background: 'rgba(13,13,26,0.8)', border: `1px solid ${dti > 40 ? 'rgba(255,45,120,0.2)' : 'rgba(0,212,255,0.2)'}` }}>
-                    <CardContent className='p-3'>
-                      <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1'>Debt-to-Income</p>
-                      <p className='font-display text-lg font-black' style={{ color: dti > 40 ? '#ff2d78' : '#00d4ff' }}>{dti}%</p>
-                      <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>{dti > 40 ? '⚠ High debt load' : '✓ Healthy range'}</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
+              <Card style={{ background: 'rgba(13,13,26,0.8)', border: `1px solid ${dti > 40 ? 'rgba(255,45,120,0.2)' : 'rgba(0,212,255,0.2)'}` }}>
+                <CardContent className='p-3'>
+                  <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1'>Debt-to-Income</p>
+                  <p className='font-display text-lg font-black' style={{ color: dti > 40 ? '#ff2d78' : '#00d4ff' }}>{dti}%</p>
+                  <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>{dti > 40 ? '⚠ High debt load' : '✓ Healthy range'}</p>
+                </CardContent>
+              </Card>
             );
           })()}
         </div>
@@ -713,13 +704,13 @@ function AIStatsTab() {
 // ─── Savings Simulator Tab ────────────────────────────────────────────────────────────────
 function SavingsSimulatorTab() {
   const fmt = useFmt();
-  const { data: nw } = useNetWorth();
+  const zbResult = useZeroBasedBudget();
+  const income = zbResult.data?.monthlyIncome ?? 0;
   const [monthlyExpenses, setMonthlyExpenses] = useState('30000');
   const [cutPct, setCutPct] = useState(10);
   const [returnRate, setReturnRate] = useState(12);
   const [years, setYears] = useState(10);
 
-  const income = nw?.monthlyIncome ?? 0;
   const expenses = parseFloat(monthlyExpenses) || 0;
   const currentSavings = Math.max(0, income - expenses);
   const savedExtra = expenses * (cutPct / 100);
