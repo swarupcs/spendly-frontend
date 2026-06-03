@@ -21,10 +21,15 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, FileText,
   Store, Cpu, CheckCircle2,
   AlertCircle, BarChart2, Loader2,
-  LineChart, TrendingUp,
+  LineChart, TrendingUp, PiggyBank,
+  Calculator, Percent,
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  ResponsiveContainer as RC, Cell,
+} from 'recharts';
 
-type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats';
+type Tab = 'networth' | 'zero-budget' | 'tax' | 'merchants' | 'forecast' | 'ai-stats' | 'savings';
 
 function TabPill({ label, icon: Icon, active, onClick }: {
   id: Tab; label: string; icon: React.ElementType; active: boolean; onClick: () => void;
@@ -84,6 +89,72 @@ function NetWorthTab() {
             </Card>
           ))}
         </div>
+      )}
+
+  {/* Extra computed metrics */}
+      {nw && (
+        <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
+          {/* Savings Rate */}
+          {nw.monthlyIncome > 0 && (() => {
+            const expenses = nw.assets > 0 ? nw.assets * 0.05 : 0; // fallback
+            const savingsRate = Math.max(0, Math.round(((nw.monthlyIncome - (nw.monthlyIncome * 0.7)) / nw.monthlyIncome) * 100));
+            const dti = nw.liabilities > 0 && nw.monthlyIncome > 0
+              ? Math.round((nw.liabilities / (nw.monthlyIncome * 12)) * 100)
+              : null;
+            return (
+              <>
+                <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(0,255,135,0.2)' }}>
+                  <CardContent className='p-3'>
+                    <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1 flex items-center gap-1'>
+                      <Percent className='w-2.5 h-2.5' /> Monthly Income
+                    </p>
+                    <p className='font-display text-lg font-black text-[#00ff87]'>{fmt(nw.monthlyIncome)}</p>
+                    <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>Update in Settings or above</p>
+                  </CardContent>
+                </Card>
+                {dti !== null && (
+                  <Card style={{ background: 'rgba(13,13,26,0.8)', border: `1px solid ${dti > 40 ? 'rgba(255,45,120,0.2)' : 'rgba(0,212,255,0.2)'}` }}>
+                    <CardContent className='p-3'>
+                      <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1'>Debt-to-Income</p>
+                      <p className='font-display text-lg font-black' style={{ color: dti > 40 ? '#ff2d78' : '#00d4ff' }}>{dti}%</p>
+                      <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>{dti > 40 ? '⚠ High debt load' : '✓ Healthy range'}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Net Worth bar visual */}
+      {nw && nw.assets > 0 && (
+        <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(124,92,252,0.12)' }}>
+          <CardHeader className='pb-2 px-4 pt-4'>
+            <CardTitle className='text-sm font-display text-[#f0efff]'>Assets vs Liabilities</CardTitle>
+          </CardHeader>
+          <CardContent className='px-2 pb-4'>
+            <RC width='100%' height={140}>
+              <BarChart data={[
+                { name: 'Assets', value: nw.assets, fill: '#00ff87' },
+                { name: 'Liabilities', value: nw.liabilities, fill: '#ff2d78' },
+                { name: 'Net Worth', value: Math.max(0, nw.totalNetWorth), fill: '#7c5cfc' },
+              ]} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray='3 3' stroke='rgba(124,92,252,0.08)' vertical={false} />
+                <XAxis dataKey='name' tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
+                <ReTooltip contentStyle={{ background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)', borderRadius: '8px', fontFamily: '"JetBrains Mono",monospace', fontSize: '11px' }} />
+                <Bar dataKey='value' radius={[6, 6, 0, 0]}>
+                  {[
+                    { fill: '#00ff87' },
+                    { fill: '#ff2d78' },
+                    { fill: '#7c5cfc' },
+                  ].map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                </Bar>
+              </BarChart>
+            </RC>
+          </CardContent>
+        </Card>
       )}
 
       {/* Update form */}
@@ -638,6 +709,133 @@ function AIStatsTab() {
   );
 }
 
+// ─── Savings Simulator Tab ────────────────────────────────────────────────────────────────
+function SavingsSimulatorTab() {
+  const fmt = useFmt();
+  const { data: nw } = useNetWorth();
+  const [monthlyExpenses, setMonthlyExpenses] = useState('30000');
+  const [cutPct, setCutPct] = useState(10);
+  const [returnRate, setReturnRate] = useState(12);
+  const [years, setYears] = useState(10);
+
+  const income = nw?.monthlyIncome ?? 0;
+  const expenses = parseFloat(monthlyExpenses) || 0;
+  const currentSavings = Math.max(0, income - expenses);
+  const savedExtra = expenses * (cutPct / 100);
+  const newSavings = currentSavings + savedExtra;
+  const savingsRate = income > 0 ? ((newSavings / income) * 100) : 0;
+
+  // Compound interest simulator
+  const monthlyReturn = returnRate / 100 / 12;
+  const months = years * 12;
+  const futureValue = monthlyReturn > 0
+    ? newSavings * ((Math.pow(1 + monthlyReturn, months) - 1) / monthlyReturn)
+    : newSavings * months;
+
+  const chartData = Array.from({ length: years }, (_, i) => {
+    const m = (i + 1) * 12;
+    const fv = monthlyReturn > 0
+      ? newSavings * ((Math.pow(1 + monthlyReturn, m) - 1) / monthlyReturn)
+      : newSavings * m;
+    const contributed = newSavings * m;
+    return {
+      year: `Y${i + 1}`,
+      total: Math.round(fv),
+      invested: Math.round(contributed),
+      gains: Math.round(fv - contributed),
+    };
+  });
+
+  return (
+    <div className='space-y-4'>
+      {/* Controls */}
+      <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(0,255,135,0.15)' }}>
+        <CardHeader className='pb-2 px-4 pt-4'>
+          <CardTitle className='text-sm font-display text-[#00ff87] flex items-center gap-2'>
+            <Calculator className='w-4 h-4' /> Savings Simulator
+          </CardTitle>
+        </CardHeader>
+        <CardContent className='px-4 pb-4 space-y-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+            <div className='space-y-1.5'>
+              <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Monthly Expenses (₹)</Label>
+              <Input type='number' value={monthlyExpenses} onChange={(e) => setMonthlyExpenses(e.target.value)}
+                className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]' />
+              {income > 0 && <p className='font-mono text-[9px] text-[#4a4870]'>Your income: {fmt(income)}/mo</p>}
+            </div>
+            <div className='space-y-1.5'>
+              <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Expected Return Rate (%/yr)</Label>
+              <Input type='number' value={returnRate} onChange={(e) => setReturnRate(parseFloat(e.target.value) || 0)}
+                className='h-10 bg-[rgba(124,92,252,0.06)] border-[rgba(124,92,252,0.15)] text-[#f0efff]' />
+            </div>
+          </div>
+
+          {/* Expense cut slider */}
+          <div className='space-y-2'>
+            <div className='flex justify-between'>
+              <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Reduce Expenses By</Label>
+              <span className='font-mono text-xs font-bold text-[#00ff87]'>{cutPct}% → save extra {fmt(savedExtra)}/mo</span>
+            </div>
+            <input type='range' min='0' max='50' step='5' value={cutPct} onChange={(e) => setCutPct(parseInt(e.target.value))}
+              className='w-full accent-[#00ff87]' />
+          </div>
+
+          {/* Years slider */}
+          <div className='space-y-2'>
+            <div className='flex justify-between'>
+              <Label className='font-mono text-[10px] text-[#4a4870] uppercase tracking-widest'>Time Horizon</Label>
+              <span className='font-mono text-xs font-bold text-[#7c5cfc]'>{years} years</span>
+            </div>
+            <input type='range' min='1' max='30' step='1' value={years} onChange={(e) => setYears(parseInt(e.target.value))}
+              className='w-full accent-[#7c5cfc]' />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      <div className='grid grid-cols-2 sm:grid-cols-4 gap-3'>
+        {[
+          { label: 'Monthly Savings', value: fmt(newSavings), color: '#00ff87', sub: `${Math.round(savingsRate)}% of income` },
+          { label: 'Extra Monthly', value: fmt(savedExtra), color: '#00d4ff', sub: `From ${cutPct}% cut` },
+          { label: `${years}Y Portfolio`, value: fmt(Math.round(futureValue)), color: '#7c5cfc', sub: 'Compounded' },
+          { label: 'Total Gains', value: fmt(Math.round(futureValue - newSavings * months)), color: '#ffb830', sub: 'Interest earned' },
+        ].map((m) => (
+          <Card key={m.label} style={{ background: 'rgba(13,13,26,0.8)', border: `1px solid ${m.color}20` }}>
+            <CardContent className='p-3'>
+              <p className='font-mono text-[9px] text-[#4a4870] uppercase mb-1'>{m.label}</p>
+              <p className='font-display text-base font-black' style={{ color: m.color }}>{m.value}</p>
+              <p className='font-mono text-[9px] text-[#4a4870] mt-0.5'>{m.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Growth chart */}
+      <Card style={{ background: 'rgba(13,13,26,0.8)', border: '1px solid rgba(124,92,252,0.12)' }}>
+        <CardHeader className='pb-2 px-4 pt-4'>
+          <CardTitle className='text-sm font-display text-[#f0efff]'>Portfolio Growth over {years} Years</CardTitle>
+        </CardHeader>
+        <CardContent className='px-2 pb-4'>
+          <RC width='100%' height={200}>
+            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray='3 3' stroke='rgba(124,92,252,0.08)' vertical={false} />
+              <XAxis dataKey='year' tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }} tickLine={false} axisLine={false} tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(1)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : String(v)} />
+              <ReTooltip contentStyle={{ background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)', borderRadius: '8px', fontFamily: '"JetBrains Mono",monospace', fontSize: '11px' }} />
+              <Bar dataKey='invested' stackId='a' fill='#7c5cfc' fillOpacity={0.7} name='Invested' radius={[0, 0, 0, 0]} />
+              <Bar dataKey='gains' stackId='a' fill='#00ff87' fillOpacity={0.9} name='Gains' radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </RC>
+          <div className='flex items-center gap-4 mt-2 px-2'>
+            <div className='flex items-center gap-1.5'><div className='w-2 h-2 rounded-sm bg-[#7c5cfc]' /><span className='font-mono text-[9px] text-[#4a4870]'>Invested</span></div>
+            <div className='flex items-center gap-1.5'><div className='w-2 h-2 rounded-sm bg-[#00ff87]' /><span className='font-mono text-[9px] text-[#4a4870]'>Gains</span></div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<Tab>('networth');
@@ -645,6 +843,7 @@ export default function FinancePage() {
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id: 'networth', label: 'Net Worth', icon: Wallet },
     { id: 'zero-budget', label: 'Zero Budget', icon: BarChart2 },
+    { id: 'savings', label: 'Savings Sim', icon: PiggyBank },
     { id: 'tax', label: 'Tax Summary', icon: FileText },
     { id: 'merchants', label: 'Merchants', icon: Store },
     { id: 'forecast', label: 'Forecast', icon: LineChart },
@@ -669,6 +868,7 @@ export default function FinancePage() {
         <div className='p-4 sm:p-6 pb-8'>
           {activeTab === 'networth' && <NetWorthTab />}
           {activeTab === 'zero-budget' && <ZeroBudgetTab />}
+          {activeTab === 'savings' && <SavingsSimulatorTab />}
           {activeTab === 'tax' && <TaxTab />}
           {activeTab === 'merchants' && <MerchantsTab />}
           {activeTab === 'forecast' && <ForecastTab />}
