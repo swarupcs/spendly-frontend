@@ -21,6 +21,7 @@ import {
   Area,
   LineChart,
   Line,
+  ComposedChart,
 } from 'recharts';
 import {
   TrendingDown,
@@ -495,6 +496,57 @@ export default function Dashboard() {
   const trueDailyAvg = (stats?.total ?? 0) / daysElapsed;
   const projectedTotal = trueDailyAvg * daysInPeriod;
   
+  // Run Rate Chart Data
+  const runRateData = useMemo(() => {
+    if (!expenses || expenses.length === 0) return [];
+    
+    // Total budget limit
+    const totalBudget = budgetOverview?.reduce((sum, b) => sum + b.limit, 0) || 0;
+
+    // Group expenses by date string
+    const dailySpend: Record<string, number> = {};
+    for (const e of expenses) {
+      dailySpend[e.date] = (dailySpend[e.date] || 0) + e.convertedAmount;
+    }
+
+    const data = [];
+    let cumulative = 0;
+    
+    const fromDate = new Date(from);
+    for (let i = 0; i < daysInPeriod; i++) {
+      const current = new Date(fromDate);
+      current.setDate(fromDate.getDate() + i);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const dateStr = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`;
+      
+      const dayName = current.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+      let actual = undefined;
+      let projected = undefined;
+      
+      if (i < daysElapsed) {
+        // past or today
+        cumulative += (dailySpend[dateStr] || 0);
+        actual = cumulative;
+        if (i === daysElapsed - 1) {
+          projected = cumulative; // connect the lines
+        }
+      } else {
+        // future
+        projected = cumulative + (trueDailyAvg * (i - daysElapsed + 1));
+      }
+
+      data.push({
+        day: dayName,
+        actual: Math.round(actual ?? 0) || undefined,
+        projected: Math.round(projected ?? 0) || undefined,
+        budget: totalBudget > 0 ? Math.round(totalBudget) : undefined,
+      });
+    }
+    
+    return data;
+  }, [expenses, daysInPeriod, daysElapsed, trueDailyAvg, budgetOverview, from]);
+
   // Fixed vs Flex calculation
   const FIXED_CATEGORIES = ['UTILITIES', 'HEALTH', 'EDUCATION'];
   const fixedTotal = expenses
@@ -985,6 +1037,93 @@ export default function Dashboard() {
                 </Card>
               );
             })()}
+
+          {/* ── Run Rate Projection Chart ── */}
+          {!isLoading && runRateData.length > 0 && period !== 'yearly' && (
+            <Card
+              className='border-[rgba(124,92,252,0.12)] mb-4'
+              style={{
+                background: 'rgba(13,13,26,0.7)',
+                backdropFilter: 'blur(20px)',
+              }}
+            >
+              <CardHeader className='pb-2 px-4 pt-4'>
+                <CardTitle className='flex items-center gap-2.5 text-[#f0efff] font-display text-sm font-semibold'>
+                  <div
+                    className='w-0.5 h-4 rounded-sm'
+                    style={{
+                      background: 'linear-gradient(180deg, #ff2d78, #ffb830)',
+                    }}
+                  />
+                  Run Rate Projection
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='px-2 pb-4'>
+                <ResponsiveContainer width='100%' height={220}>
+                  <ComposedChart
+                    data={runRateData}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray='3 3'
+                      stroke='rgba(124,92,252,0.08)'
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey='day'
+                      tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                      tickLine={false}
+                      axisLine={false}
+                      minTickGap={20}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 9, fill: '#4a4870', fontFamily: '"JetBrains Mono", monospace' }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v)}
+                    />
+                    <Tooltip 
+                      contentStyle={{ background: '#0d0d1a', border: '1px solid rgba(124,92,252,0.2)', borderRadius: '8px' }}
+                      itemStyle={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px' }}
+                      labelStyle={{ color: '#8b89b0', fontSize: '11px', marginBottom: '4px' }}
+                    />
+                    
+                    {runRateData[0]?.budget && (
+                      <Line
+                        type='stepAfter'
+                        dataKey='budget'
+                        stroke='#ffb830'
+                        strokeWidth={1}
+                        strokeDasharray='5 5'
+                        dot={false}
+                        activeDot={false}
+                        name='Budget Limit'
+                      />
+                    )}
+                    <Line
+                      type='monotone'
+                      dataKey='actual'
+                      stroke='#00ff87'
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 5 }}
+                      name='Actual Spend'
+                    />
+                    <Line
+                      type='monotone'
+                      dataKey='projected'
+                      stroke='#ff2d78'
+                      strokeWidth={2}
+                      strokeDasharray='4 4'
+                      dot={false}
+                      activeDot={false}
+                      name='Projected'
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Charts ── */}
           {!isLoading && expenses.length > 0 && (
