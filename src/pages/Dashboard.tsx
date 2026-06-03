@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import {
   TrendingDown,
+  TrendingUp,
   DollarSign,
   BarChart2,
   Activity,
@@ -38,6 +39,7 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   X,
+  FastForward,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -50,6 +52,8 @@ type Period = 'weekly' | 'monthly' | 'last_monthly' | 'yearly';
 function getDateRange(period: Period): {
   from: string;
   to: string;
+  prevFrom: string;
+  prevTo: string;
   label: string;
   monthParam: string;
 } {
@@ -64,9 +68,17 @@ function getDateRange(period: Period): {
     monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
+    
+    const prevMonday = new Date(monday);
+    prevMonday.setDate(monday.getDate() - 7);
+    const prevSunday = new Date(sunday);
+    prevSunday.setDate(sunday.getDate() - 7);
+    
     return {
       from: fmt(monday),
       to: fmt(sunday),
+      prevFrom: fmt(prevMonday),
+      prevTo: fmt(prevSunday),
       label: `${monday.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – ${sunday.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}`,
       monthParam: `${now.getFullYear()}-${pad(now.getMonth() + 1)}`,
     };
@@ -75,9 +87,14 @@ function getDateRange(period: Period): {
   if (period === 'yearly') {
     const jan1 = new Date(now.getFullYear(), 0, 1);
     const dec31 = new Date(now.getFullYear(), 11, 31);
+    const prevJan1 = new Date(now.getFullYear() - 1, 0, 1);
+    const prevDec31 = new Date(now.getFullYear() - 1, 11, 31);
+    
     return {
       from: fmt(jan1),
       to: fmt(dec31),
+      prevFrom: fmt(prevJan1),
+      prevTo: fmt(prevDec31),
       label: String(now.getFullYear()),
       monthParam: `${now.getFullYear()}-${pad(now.getMonth() + 1)}`,
     };
@@ -86,9 +103,14 @@ function getDateRange(period: Period): {
   if (period === 'last_monthly') {
     const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+    const prevFirstDay = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const prevLastDay = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+    
     return {
       from: fmt(firstDay),
       to: fmt(lastDay),
+      prevFrom: fmt(prevFirstDay),
+      prevTo: fmt(prevLastDay),
       label: firstDay.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
       monthParam: `${firstDay.getFullYear()}-${pad(firstDay.getMonth() + 1)}`,
     };
@@ -97,9 +119,14 @@ function getDateRange(period: Period): {
   // monthly (default)
   const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const prevFirstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevLastDay = new Date(now.getFullYear(), now.getMonth(), 0);
+  
   return {
     from: fmt(firstDay),
     to: fmt(lastDay),
+    prevFrom: fmt(prevFirstDay),
+    prevTo: fmt(prevLastDay),
     label: now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }),
     monthParam: `${now.getFullYear()}-${pad(now.getMonth() + 1)}`,
   };
@@ -310,6 +337,25 @@ function ChartTypeDropdown({
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
+function TrendIndicator({ current, previous }: { current: number; previous: number }) {
+  if (typeof previous !== 'number' || previous === 0) return null;
+  const diff = current - previous;
+  const pct = (diff / previous) * 100;
+  if (pct === 0) return null;
+  
+  const isUp = pct > 0;
+  // For expenses, going up is generally negative (red), going down is positive (green)
+  const color = isUp ? '#ff2d78' : '#00ff87';
+  const Icon = isUp ? TrendingUp : TrendingDown;
+  
+  return (
+    <div className='flex items-center gap-1 shrink-0 bg-[rgba(13,13,26,0.5)] px-1.5 py-0.5 rounded border border-[rgba(255,255,255,0.05)]' style={{ color }}>
+      <Icon className='w-3 h-3' />
+      <span className='font-mono text-[9px] font-bold'>{Math.abs(pct).toFixed(1)}%</span>
+    </div>
+  );
+}
+
 function StatCard({
   label,
   value,
@@ -317,6 +363,7 @@ function StatCard({
   sub,
   accent,
   isLoading,
+  trend,
 }: {
   label: string;
   value: string;
@@ -324,6 +371,7 @@ function StatCard({
   sub: React.ReactNode;
   accent: string;
   isLoading?: boolean;
+  trend?: { current: number; previous: number };
 }) {
   return (
     <Card
@@ -362,8 +410,11 @@ function StatCard({
             {value}
           </div>
         )}
-        <div className='font-mono text-[10px] text-[#4a4870] flex items-center gap-1.5 flex-wrap'>
-          {sub}
+        <div className='font-mono text-[10px] text-[#4a4870] flex items-center gap-2 flex-wrap'>
+          {trend && <TrendIndicator current={trend.current} previous={trend.previous} />}
+          <div className='flex items-center gap-1.5 opacity-80'>
+            {sub}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -381,6 +432,8 @@ export default function Dashboard() {
   const {
     from,
     to,
+    prevFrom,
+    prevTo,
     label: periodLabel,
     monthParam,
   } = useMemo(() => getDateRange(period), [period]);
@@ -391,6 +444,11 @@ export default function Dashboard() {
   const { data: statsData, isLoading: statsLoading } = useExpenseStats(
     from,
     to,
+  );
+  
+  const { data: prevStatsData, isLoading: prevStatsLoading } = useExpenseStats(
+    prevFrom,
+    prevTo,
   );
   const { data: anomalies } = useAnomalies();
   const { mutate: dismissAnomaly } = useDismissAnomaly();
@@ -415,7 +473,26 @@ export default function Dashboard() {
     return new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   }, [period]);
 
-  const dailyAvg = (stats?.total ?? 0) / daysInPeriod;
+  const daysElapsed = useMemo(() => {
+    const now = new Date();
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    
+    // Normalize to start of day
+    now.setHours(0, 0, 0, 0);
+    fromDate.setHours(0, 0, 0, 0);
+    toDate.setHours(0, 0, 0, 0);
+
+    if (now > toDate) return daysInPeriod;
+    if (now < fromDate) return 1;
+
+    const diffTime = Math.abs(now.getTime() - fromDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return Math.max(1, Math.min(diffDays, daysInPeriod));
+  }, [from, to, daysInPeriod]);
+
+  const trueDailyAvg = (stats?.total ?? 0) / daysElapsed;
+  const projectedTotal = trueDailyAvg * daysInPeriod;
   
   let maxTxn = 0;
   let minTxn = Infinity;
@@ -629,14 +706,10 @@ export default function Dashboard() {
               label='Total Spent'
               value={fmt(stats?.total ?? 0)}
               icon={DollarSign}
-              sub={
-                <>
-                  <TrendingDown className='w-3 h-3 text-[#00ff87]' />
-                  Overall total
-                </>
-              }
+              sub='Overall total'
               accent='#7c5cfc'
               isLoading={isLoading}
+              trend={statsData && prevStatsData ? { current: statsData.total, previous: prevStatsData.total } : undefined}
             />
             <StatCard
               label='Transactions'
@@ -645,12 +718,13 @@ export default function Dashboard() {
               sub='Total entries'
               accent='#00d4ff'
               isLoading={isLoading}
+              trend={statsData && prevStatsData ? { current: statsData.count, previous: prevStatsData.count } : undefined}
             />
             <StatCard
               label='Daily Avg'
-              value={fmt(dailyAvg)}
+              value={fmt(trueDailyAvg)}
               icon={Calendar}
-              sub='Per day'
+              sub='Per day (run rate)'
               accent='#00ff87'
               isLoading={isLoading}
             />
@@ -687,10 +761,10 @@ export default function Dashboard() {
               isLoading={isLoading}
             />
             <StatCard
-              label='Smallest Expense'
-              value={fmt(minTxn)}
-              icon={ArrowDownCircle}
-              sub='Single min'
+              label='Projected Spend'
+              value={fmt(projectedTotal)}
+              icon={FastForward}
+              sub='End of period est.'
               accent='#5b8fff'
               isLoading={isLoading}
             />
