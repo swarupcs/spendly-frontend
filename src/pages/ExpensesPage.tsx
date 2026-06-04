@@ -711,9 +711,11 @@ export default function ExpensesPage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
-  // Date range state — NEW
+  // Date range state
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showForm, setShowForm] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -735,6 +737,7 @@ export default function ExpensesPage() {
   const { mutateAsync: emailReport, isPending: isEmailing } = useEmailExpenseReport();
 
   const expenses = data?.expenses ?? [];
+  const pagination = data?.pagination;
   const isSaving = isCreating || isUpdating;
   const totalAmount = expenses.reduce((s, e) => s + e.convertedAmount, 0);
   const hasActiveFilters = !!(
@@ -744,21 +747,29 @@ export default function ExpensesPage() {
     searchQuery
   );
 
-  // Apply date range to filters
+  // Apply date range to filters (reset to page 1)
   const applyDateFilter = (from: string, to: string) => {
     setFromDate(from);
     setToDate(to);
-    setFilters((p) => ({ ...p, from: from || undefined, to: to || undefined }));
+    setCurrentPage(1);
+    setFilters((p) => ({ ...p, from: from || undefined, to: to || undefined, page: 1 }));
   };
 
   const handleCategorySelect = (cat: Category | null) => {
     setSelectedCategory(cat);
-    setFilters((p) => ({ ...p, category: cat ?? undefined }));
+    setCurrentPage(1);
+    setFilters((p) => ({ ...p, category: cat ?? undefined, page: 1 }));
   };
 
   const handleSearch = (q: string) => {
     setSearchQuery(q);
-    setFilters((p) => ({ ...p, search: q || undefined }));
+    setCurrentPage(1);
+    setFilters((p) => ({ ...p, search: q || undefined, page: 1 }));
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setFilters((p) => ({ ...p, page }));
   };
 
   const resetForm = () => {
@@ -848,7 +859,7 @@ export default function ExpensesPage() {
             <p className='font-mono text-[10px] text-[#4a4870]'>
               {isLoading
                 ? 'Loading…'
-                : `${expenses.length} transactions · ${fmt(totalAmount)}`}
+                : `${pagination?.total ?? expenses.length} transactions · ${fmt(totalAmount)}`}
             </p>
           </div>
           <div className='flex items-center gap-2 shrink-0'>
@@ -1247,6 +1258,87 @@ export default function ExpensesPage() {
                   <Download className='w-4 h-4' /> Export CSV
                 </Button>
               </div>
+
+              {/* Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className='flex items-center justify-between pt-4 mt-2' style={{ borderTop: '1px solid rgba(124,92,252,0.1)' }}>
+                  <span className='font-mono text-[11px] text-[#4a4870]'>
+                    Page {currentPage} of {pagination.totalPages} · {pagination.total} total
+                  </span>
+                  <div className='flex items-center gap-1.5'>
+                    <button
+                      disabled={currentPage <= 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      className='h-8 px-3 rounded-lg font-mono text-[11px] transition-all disabled:opacity-30 disabled:cursor-not-allowed'
+                      style={{
+                        background: 'rgba(124,92,252,0.08)',
+                        border: '1px solid rgba(124,92,252,0.18)',
+                        color: '#8b89b0',
+                      }}
+                    >
+                      ← Prev
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                      .filter((p) => {
+                        // Show first, last, current, and ±1 around current
+                        return (
+                          p === 1 ||
+                          p === pagination.totalPages ||
+                          Math.abs(p - currentPage) <= 1
+                        );
+                      })
+                      .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                        if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) {
+                          acc.push('...');
+                        }
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((p, idx) =>
+                        p === '...' ? (
+                          <span key={`ellipsis-${idx}`} className='font-mono text-[11px] text-[#4a4870] px-1'>…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => handlePageChange(p as number)}
+                            className='h-8 w-8 rounded-lg font-mono text-[11px] transition-all'
+                            style={
+                              currentPage === p
+                                ? {
+                                    background: 'linear-gradient(135deg, #7c5cfc, #00d4ff)',
+                                    border: '1px solid transparent',
+                                    color: '#fff',
+                                    fontWeight: 700,
+                                  }
+                                : {
+                                    background: 'rgba(124,92,252,0.08)',
+                                    border: '1px solid rgba(124,92,252,0.18)',
+                                    color: '#8b89b0',
+                                  }
+                            }
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
+
+                    <button
+                      disabled={currentPage >= pagination.totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      className='h-8 px-3 rounded-lg font-mono text-[11px] transition-all disabled:opacity-30 disabled:cursor-not-allowed'
+                      style={{
+                        background: 'rgba(124,92,252,0.08)',
+                        border: '1px solid rgba(124,92,252,0.18)',
+                        color: '#8b89b0',
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
