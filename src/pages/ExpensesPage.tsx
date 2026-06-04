@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   MessageSquare,
   Wand2,
+  Mail,
 } from 'lucide-react';
 import { ExportDialog } from '@/components/ExportDialog';
 import {
@@ -22,6 +23,7 @@ import {
   useCreateExpense,
   useUpdateExpense,
   useDeleteExpense,
+  useEmailExpenseReport,
 } from '@/services/expenses.service';
 import type {
   Category,
@@ -32,6 +34,7 @@ import type {
 import { expensesApi } from '@/api/expenses.api';
 import { CURRENCIES, getCurrencySymbol } from '@/api/currency.api';
 import { useUserCurrency, useExchangeRates, useFmt } from '@/hooks/useCurrency';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -729,6 +732,7 @@ export default function ExpensesPage() {
   const { mutateAsync: updateExpense, isPending: isUpdating } =
     useUpdateExpense();
   const { mutateAsync: deleteExpense } = useDeleteExpense();
+  const { mutateAsync: emailReport, isPending: isEmailing } = useEmailExpenseReport();
 
   const expenses = data?.expenses ?? [];
   const isSaving = isCreating || isUpdating;
@@ -796,6 +800,15 @@ export default function ExpensesPage() {
     }
   };
 
+  const handleEmailReport = async () => {
+    try {
+      await emailReport({ from: fromDate || undefined, to: toDate || undefined });
+      toast.success('Expense report sent to your email!');
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? 'Failed to send email report');
+    }
+  };
+
   const handleEdit = (exp: Expense) => {
     setFormData({
       title: exp.title,
@@ -839,6 +852,16 @@ export default function ExpensesPage() {
             </p>
           </div>
           <div className='flex items-center gap-2 shrink-0'>
+            <Button
+              variant='outline'
+              size='sm'
+              onClick={handleEmailReport}
+              disabled={isEmailing}
+              className='hidden sm:flex gap-1.5 border-[rgba(124,92,252,0.18)] text-[#8b89b0] hover:text-[#f0efff] hover:border-[rgba(124,92,252,0.35)]'
+            >
+              {isEmailing ? <Loader2 className='w-3.5 h-3.5 animate-spin' /> : <Mail className='w-3.5 h-3.5' />} 
+              Email
+            </Button>
             <Button
               variant='outline'
               size='sm'

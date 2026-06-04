@@ -216,4 +216,9 @@ export const expensesApi = {
         body: JSON.stringify({ title, merchant }),
       }
     ),
+  emailExpenseReport: (filters?: { from?: string; to?: string }) =>
+    request<{ message: string }>('/expenses/email-report', {
+      method: 'POST',
+      body: JSON.stringify(filters || {}),
+    }),
 };

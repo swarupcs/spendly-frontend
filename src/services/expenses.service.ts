@@ -119,3 +119,15 @@ export function useBulkDeleteExpenses() {
     },
   });
 }
+
+export function useEmailExpenseReport() {
+  return useMutation({
+    mutationFn: async (filters?: { from?: string; to?: string }) => {
+      const res = await expensesApi.emailExpenseReport(filters);
+      if (!res.success) {
+        throw new Error(res.error ?? 'Failed to send email report');
+      }
+      return res;
+    },
+  });
+}
