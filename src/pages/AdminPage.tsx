@@ -4,8 +4,105 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { ShieldAlert, User, MessageSquare, PieChart, Activity, Settings2, Save, Eye, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const AVAILABLE_PROVIDERS = ['gemini', 'openai', 'groq', 'vertex', 'custom'];
+
+// ── LLM model list grouped by provider ──────────────────────────────────────
+const LLM_MODEL_GROUPS = [
+  {
+    group: 'OpenAI',
+    models: [
+      { value: 'gpt-4.1-nano',        label: 'GPT-4.1 Nano' },
+      { value: 'gpt-4.1-mini',        label: 'GPT-4.1 Mini' },
+      { value: 'openai/gpt-oss-20b',  label: 'GPT-OSS 20B' },
+      { value: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B' },
+      { value: 'gpt-4o',              label: 'GPT-4o' },
+      { value: 'gpt-4o-mini',         label: 'GPT-4o Mini' },
+      { value: 'gpt-4',               label: 'GPT-4' },
+    ],
+  },
+  {
+    group: 'OpenAI Embeddings',
+    models: [
+      { value: 'text-embedding-3-small', label: 'Text Embedding 3 Small' },
+      { value: 'text-embedding-3-large', label: 'Text Embedding 3 Large' },
+      { value: 'text-embedding-ada-002', label: 'Text Embedding Ada 002' },
+    ],
+  },
+  {
+    group: 'Google Gemini',
+    models: [
+      { value: 'gemini-2.5-pro',             label: 'Gemini 2.5 Pro' },
+      { value: 'gemini-2.5-flash',           label: 'Gemini 2.5 Flash' },
+      { value: 'gemini-3.5-flash',           label: 'Gemini 3.5 Flash' },
+      { value: 'gemini-embedding-001',       label: 'Gemini Embedding 001' },
+      { value: 'gemini-3-pro-image-preview', label: 'Gemini 3 Pro Image Preview' },
+    ],
+  },
+  {
+    group: 'Meta Llama',
+    models: [
+      { value: 'llama-4-scout-17b-16e-instruct', label: 'Llama 4 Scout 17B' },
+      { value: 'llama-3.3-70b-versatile',        label: 'Llama 3.3 70B Versatile' },
+      { value: 'llama-3.1-8b-instant',           label: 'Llama 3.1 8B Instant' },
+      { value: 'llama-guard-4-12b',              label: 'Llama Guard 4 12B' },
+    ],
+  },
+  {
+    group: 'Other',
+    models: [
+      { value: 'sarvam-m',           label: 'Sarvam M' },
+      { value: 'groq/compound',      label: 'Groq Compound' },
+      { value: 'groq/compound-mini', label: 'Groq Compound Mini' },
+      { value: 'qwen/qwen3-32b',     label: 'Qwen3 32B' },
+    ],
+  },
+];
+
+// Shared model Select dropdown
+function LlmModelSelect({ value, onChange, placeholder = 'Select a model', size = 'default' }: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  size?: 'default' | 'sm';
+}) {
+  return (
+    <Select value={value || ''} onValueChange={onChange}>
+      <SelectTrigger
+        className={`w-full bg-[#0d0d1a] border-[rgba(124,92,252,0.2)] text-[#f0efff] focus:ring-[#7c5cfc] ${
+          size === 'sm' ? 'h-7 text-xs px-2' : 'h-9 text-sm px-3'
+        }`}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent className="bg-[#0d0d1a] border-[rgba(124,92,252,0.2)] text-[#f0efff] max-h-72 z-[9999]">
+        {LLM_MODEL_GROUPS.map(({ group, models }) => (
+          <SelectGroup key={group}>
+            <SelectLabel className="text-[#4a4870] text-[10px] uppercase tracking-widest">{group}</SelectLabel>
+            {models.map((m) => (
+              <SelectItem
+                key={m.value}
+                value={m.value}
+                className="text-[#f0efff] focus:bg-[rgba(124,92,252,0.2)] focus:text-[#f0efff] text-xs"
+              >
+                {m.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 function UserDetailsPanel({ userId, onBack }: { userId: number; onBack: () => void }) {
   const { data: details, isLoading } = useAdminUserDetails(userId);
@@ -209,16 +306,16 @@ export default function AdminPage() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-mono text-[#4a4870] uppercase mb-1">Model (Optional)</label>
-                    <input
-                      type="text"
-                      value={globalModel}
-                      onChange={(e) => setGlobalModel(e.target.value)}
-                      placeholder="e.g. gpt-4o"
-                      className="w-full bg-[#0d0d1a] border border-[rgba(124,92,252,0.2)] rounded-lg px-3 py-2 text-sm text-[#f0efff]"
-                    />
-                  </div>
+                  {globalProvider === 'custom' && (
+                    <div>
+                      <label className="block text-xs font-mono text-[#4a4870] uppercase mb-1">Model</label>
+                      <LlmModelSelect
+                        value={globalModel}
+                        onChange={setGlobalModel}
+                        placeholder="Select a model…"
+                      />
+                    </div>
+                  )}
                 </div>
                 <Button
                   onClick={handleGlobalSave}
@@ -300,12 +397,11 @@ export default function AdminPage() {
                                   ))}
                                 </select>
                                 {edit.llmProvider !== 'default' && (
-                                  <input
-                                    type="text"
-                                    placeholder="Model override (optional)"
+                                  <LlmModelSelect
                                     value={edit.llmModel}
-                                    onChange={(e) => setUserEdits(prev => ({ ...prev, [user.id]: { ...edit, llmModel: e.target.value } }))}
-                                    className="w-full bg-[#0d0d1a] border border-[rgba(124,92,252,0.2)] rounded px-2 py-1 text-xs"
+                                    onChange={(v) => setUserEdits(prev => ({ ...prev, [user.id]: { ...edit, llmModel: v } }))}
+                                    placeholder="Model override…"
+                                    size="sm"
                                   />
                                 )}
                                 {hasChanges && (
