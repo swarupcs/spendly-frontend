@@ -61,7 +61,8 @@ function AppShell() {
           className='flex-1 relative'
           style={{
             overflow: 'hidden',
-            paddingTop: 'var(--mobile-header-height, 0px)',
+            paddingTop:
+              'calc(var(--mobile-header-height, 0px) + env(safe-area-inset-top))',
             paddingBottom: 'var(--mobile-bottomnav-height, 0px)',
           }}
         >

@@ -353,41 +353,6 @@ function DesktopNavItems({ isExpanded }: { isExpanded: boolean }) {
   );
 }
 
-// ─── Mobile: top logo bar (branding only, no hamburger) ───────────────────────
-function MobileTopBar() {
-  return (
-    <div
-      className='md:hidden fixed top-0 left-0 right-0 z-40 flex items-center px-4 h-14'
-      style={{
-        background: 'rgba(8,8,16,0.97)',
-        borderBottom: '1px solid rgba(124,92,252,0.12)',
-        backdropFilter: 'blur(20px)',
-      }}
-    >
-      <div className='flex items-center gap-2.5'>
-        <div
-          className='w-8 h-8 rounded-lg flex items-center justify-center shrink-0'
-          style={{
-            background: 'rgba(124,92,252,0.08)',
-            border: '1px solid rgba(124,92,252,0.2)',
-            boxShadow: '0 0 14px rgba(124,92,252,0.15)',
-          }}
-        >
-          <img src="/logo.svg" alt="Spendly Logo" className="w-5 h-5" />
-        </div>
-        <div>
-          <span className='font-display text-base font-extrabold text-[--foreground] tracking-tight'>
-            Spendly
-          </span>
-          <span className='font-mono text-[9px] text-[#4a4870] tracking-widest uppercase ml-2 hidden xs:inline'>
-            Smart Tracking
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Mobile: bottom navigation bar ───────────────────────────────────────
 function MobileBottomNav() {
   const location = useLocation();
@@ -567,8 +532,7 @@ export function Sidebar() {
         <DesktopNavItems isExpanded={isExpanded} />
       </aside>
 
-      {/* ── Mobile: logo bar at top + nav at bottom ── */}
-      <MobileTopBar />
+      {/* ── Mobile: bottom navigation (page-level headers serve as the top bar) ── */}
       <MobileBottomNav />
     </>
   );

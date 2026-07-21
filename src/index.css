@@ -77,10 +77,12 @@
   --sidebar-ring:               var(--violet);
 }
 
-/* On mobile viewports, activate the header/bottomnav offsets */
+/* On mobile viewports, activate the bottom-nav offset.
+   There is no separate top branding bar on mobile — each page's own sticky
+   header serves as the top bar — so the header offset stays 0 and the notch
+   is handled via env(safe-area-inset-top) on the main content area. */
 @media (max-width: 767px) {
   :root {
-    --mobile-header-height:    56px;
     --mobile-bottomnav-height: 60px;
   }
 }
