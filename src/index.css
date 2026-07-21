@@ -90,11 +90,14 @@ html, body {
   overscroll-behavior: none;
 }
 
-/* Ensure modals and sheets are readable on small screens */
+/* Ensure centered modals never exceed the viewport on small screens.
+   Width is handled per-component; this caps height so headers/actions
+   stay reachable and the body scrolls instead of overflowing off-screen. */
 @media (max-width: 640px) {
-  [role='dialog'] {
-    max-width: calc(100vw - 2rem) !important;
-    margin: 1rem !important;
+  [data-slot='dialog-content'],
+  [data-slot='alert-dialog-content'] {
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
   }
 }
 
