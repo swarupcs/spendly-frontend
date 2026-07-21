@@ -350,3 +350,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ─── Mobile readability: raise the smallest label sizes a step so dense
+   captions, badges, dates, and metadata stay legible on phones. Desktop
+   keeps its tighter typographic scale. ── */
+@media (max-width: 640px) {
+  .text-\[8px\]  { font-size: 9px; }
+  .text-\[9px\]  { font-size: 10px; }
+  .text-\[10px\] { font-size: 11px; }
+}

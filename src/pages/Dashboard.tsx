@@ -1551,7 +1551,7 @@ export default function Dashboard() {
                           {CATEGORY_EMOJI[exp.category] ?? '📦'}
                         </div>
                         <div className='min-w-0'>
-                          <div className='font-sans text-sm font-medium text-[#f0efff] truncate max-w-[140px] sm:max-w-[260px]'>
+                          <div className='font-sans text-sm font-medium text-[#f0efff] truncate'>
                             {exp.title}
                           </div>
                           <div className='font-mono text-[9px] text-[#4a4870] flex items-center gap-1.5'>
