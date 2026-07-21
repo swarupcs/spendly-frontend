@@ -7,7 +7,7 @@ export default function LandingPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
-    <div className="min-h-screen bg-[#080810] text-[#f0efff] font-sans selection:bg-[#7c5cfc]/30 selection:text-white flex flex-col relative overflow-hidden">
+    <div className="min-h-dvh bg-[#080810] text-[#f0efff] font-sans selection:bg-[#7c5cfc]/30 selection:text-white flex flex-col relative overflow-hidden">
       {/* Background gradients */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[radial-gradient(circle,_rgba(124,92,252,0.15)_0%,_transparent_70%)] pointer-events-none blur-3xl" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-[radial-gradient(circle,_rgba(0,212,255,0.1)_0%,_transparent_70%)] pointer-events-none blur-3xl" />

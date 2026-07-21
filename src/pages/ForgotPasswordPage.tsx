@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div
-      className='min-h-screen flex items-center justify-center px-4 py-8 relative overflow-hidden'
+      className='min-h-dvh flex items-center justify-center px-4 py-8 relative overflow-hidden'
       style={{ background: '#080810' }}
     >
       {/* BG orbs */}

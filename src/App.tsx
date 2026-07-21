@@ -46,7 +46,7 @@ function AppShell() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        height: '100dvh', /* dynamic viewport height — excludes mobile browser chrome */
         overflow: 'hidden',
         background: '#080810',
       }}
