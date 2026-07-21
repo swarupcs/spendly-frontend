@@ -35,7 +35,7 @@ export default function GoogleCallbackPage() {
   return (
     <div
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: '#080810',
         display: 'flex',
         alignItems: 'center',

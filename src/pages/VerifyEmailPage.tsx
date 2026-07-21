@@ -38,7 +38,7 @@ export default function VerifyEmailPage() {
 
   return (
     <div
-      className='min-h-screen flex items-center justify-center px-4 relative overflow-hidden'
+      className='min-h-dvh flex items-center justify-center px-4 relative overflow-hidden'
       style={{ background: '#080810' }}
     >
       {/* BG orbs */}

@@ -140,25 +140,27 @@ function BudgetCard({
           <div className='flex items-center gap-1.5 shrink-0'>
             <button
               onClick={() => onEdit(item)}
-              className='w-8 h-8 rounded-lg flex items-center justify-center transition-colors'
+              aria-label='Edit budget'
+              className='w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-colors'
               style={{
                 background: 'rgba(91,143,255,0.1)',
                 border: '1px solid rgba(91,143,255,0.2)',
                 color: '#5b8fff',
               }}
             >
-              <Edit2 className='w-3.5 h-3.5' />
+              <Edit2 className='w-4 h-4' />
             </button>
             <button
               onClick={() => onDelete(item)}
-              className='w-8 h-8 rounded-lg flex items-center justify-center transition-colors'
+              aria-label='Delete budget'
+              className='w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center transition-colors'
               style={{
                 background: 'rgba(255,59,92,0.08)',
                 border: '1px solid rgba(255,59,92,0.2)',
                 color: '#ff3b5c',
               }}
             >
-              <Trash2 className='w-3.5 h-3.5' />
+              <Trash2 className='w-4 h-4' />
             </button>
           </div>
         </div>

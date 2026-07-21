@@ -9,7 +9,7 @@ export function ProtectedRoute() {
   if (isLoading) {
     return (
       <div
-        className='flex items-center justify-center h-screen flex-col gap-5'
+        className='flex items-center justify-center h-dvh flex-col gap-5'
         style={{ background: '#080810' }}
       >
         <div className='relative'>

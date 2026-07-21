@@ -46,7 +46,7 @@ function AppShell() {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        height: '100dvh', /* dynamic viewport height — excludes mobile browser chrome */
         overflow: 'hidden',
         background: '#080810',
       }}
@@ -61,7 +61,8 @@ function AppShell() {
           className='flex-1 relative'
           style={{
             overflow: 'hidden',
-            paddingTop: 'var(--mobile-header-height, 0px)',
+            paddingTop:
+              'calc(var(--mobile-header-height, 0px) + env(safe-area-inset-top))',
             paddingBottom: 'var(--mobile-bottomnav-height, 0px)',
           }}
         >

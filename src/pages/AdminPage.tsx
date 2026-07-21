@@ -128,8 +128,8 @@ function UserDetailsPanel({ userId, onBack }: { userId: number; onBack: () => vo
       ) : (
         <Card style={{ background: 'rgba(13,13,26,0.7)', border: '1px solid rgba(124,92,252,0.15)' }} className="flex-1 flex flex-col overflow-hidden">
           <Tabs defaultValue="expenses" className="flex flex-col flex-1 h-full min-h-[500px]">
-            <div className="px-6 pt-6 shrink-0">
-              <TabsList className="grid w-full grid-cols-3 bg-[rgba(124,92,252,0.1)] text-[#8b89b0]">
+            <div className="px-4 sm:px-6 pt-6 shrink-0">
+              <TabsList className="flex w-full justify-start overflow-x-auto scrollbar-hide sm:grid sm:grid-cols-3 bg-[rgba(124,92,252,0.1)] text-[#8b89b0]">
                 <TabsTrigger value="expenses" className="data-[state=active]:bg-[#7c5cfc] data-[state=active]:text-white">Expenses</TabsTrigger>
                 <TabsTrigger value="chats" className="data-[state=active]:bg-[#7c5cfc] data-[state=active]:text-white">Chat History</TabsTrigger>
                 <TabsTrigger value="ai" className="data-[state=active]:bg-[#7c5cfc] data-[state=active]:text-white">AI / Tool Usage</TabsTrigger>
@@ -137,7 +137,7 @@ function UserDetailsPanel({ userId, onBack }: { userId: number; onBack: () => vo
             </div>
             
             <div className="flex-1 overflow-hidden relative">
-              <TabsContent value="expenses" className="absolute inset-0 overflow-y-auto px-6 pb-6 pt-4 data-[state=inactive]:hidden">
+              <TabsContent value="expenses" className="absolute inset-0 overflow-y-auto px-4 sm:px-6 pb-6 pt-4 data-[state=inactive]:hidden">
                 {details.expenses.length === 0 ? (
                   <div className="text-center text-[#8b89b0] py-8 text-sm">No expenses found</div>
                 ) : (
@@ -157,7 +157,7 @@ function UserDetailsPanel({ userId, onBack }: { userId: number; onBack: () => vo
                 )}
               </TabsContent>
               
-              <TabsContent value="chats" className="absolute inset-0 overflow-y-auto px-6 pb-6 pt-4 data-[state=inactive]:hidden">
+              <TabsContent value="chats" className="absolute inset-0 overflow-y-auto px-4 sm:px-6 pb-6 pt-4 data-[state=inactive]:hidden">
                 {details.chatMessages.length === 0 ? (
                   <div className="text-center text-[#8b89b0] py-8 text-sm">No chats found</div>
                 ) : (
@@ -176,7 +176,7 @@ function UserDetailsPanel({ userId, onBack }: { userId: number; onBack: () => vo
                 )}
               </TabsContent>
 
-              <TabsContent value="ai" className="absolute inset-0 overflow-y-auto px-6 pb-6 pt-4 data-[state=inactive]:hidden">
+              <TabsContent value="ai" className="absolute inset-0 overflow-y-auto px-4 sm:px-6 pb-6 pt-4 data-[state=inactive]:hidden">
                 {details.toolCallLogs.length === 0 ? (
                   <div className="text-center text-[#8b89b0] py-8 text-sm">No AI tool usage found</div>
                 ) : (
@@ -275,7 +275,7 @@ export default function AdminPage() {
 
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3 bg-[rgba(124,92,252,0.1)] text-[#8b89b0] mb-6 shrink-0">
+          <TabsList className="flex w-full max-w-2xl justify-start overflow-x-auto scrollbar-hide sm:grid sm:grid-cols-3 bg-[rgba(124,92,252,0.1)] text-[#8b89b0] mb-6 shrink-0">
             <TabsTrigger value="users" className="data-[state=active]:bg-[#7c5cfc] data-[state=active]:text-white">Users & Usage</TabsTrigger>
             <TabsTrigger value="settings" className="data-[state=active]:bg-[#7c5cfc] data-[state=active]:text-white">Global Settings</TabsTrigger>
             <TabsTrigger value="details" disabled={!selectedUserId} className="data-[state=active]:bg-[#7c5cfc] data-[state=active]:text-white">User Details</TabsTrigger>

@@ -218,15 +218,17 @@ function GoalCard({
           <div className='flex items-center gap-1 shrink-0'>
             <button
               onClick={() => onEdit(goal)}
-              className='p-1.5 rounded-lg text-[#4a4870] hover:text-[#9d7fff] hover:bg-[rgba(124,92,252,0.1)] transition-colors'
+              aria-label='Edit goal'
+              className='w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[#4a4870] hover:text-[#9d7fff] hover:bg-[rgba(124,92,252,0.1)] transition-colors'
             >
-              <Pencil className='h-3.5 w-3.5' />
+              <Pencil className='h-4 w-4' />
             </button>
             <button
               onClick={() => onDelete(goal.id)}
-              className='p-1.5 rounded-lg text-[#4a4870] hover:text-[#ff3b5c] hover:bg-[rgba(255,59,92,0.1)] transition-colors'
+              aria-label='Delete goal'
+              className='w-10 h-10 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg text-[#4a4870] hover:text-[#ff3b5c] hover:bg-[rgba(255,59,92,0.1)] transition-colors'
             >
-              <Trash2 className='h-3.5 w-3.5' />
+              <Trash2 className='h-4 w-4' />
             </button>
           </div>
         </div>

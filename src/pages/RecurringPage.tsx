@@ -111,80 +111,79 @@ function RecurringCard({
       }}
     >
       <CardContent className='p-4'>
-        <div className='flex items-start justify-between gap-3'>
-          {/* Left: icon + info */}
-          <div className='flex items-center gap-3 min-w-0 flex-1'>
-            <div
-              className='w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0'
-              style={{ background: `${color}15`, border: `1px solid ${color}30` }}
-            >
-              {CATEGORY_EMOJI[item.category] ?? '📦'}
-            </div>
-            <div className='min-w-0'>
-              <div className='flex items-center gap-2 flex-wrap'>
-                <span className='font-sans text-sm font-semibold text-[#f0efff] truncate'>
-                  {item.title}
+        {/* Row 1 — icon + info get the full card width so titles stay readable */}
+        <div className='flex items-center gap-3 min-w-0'>
+          <div
+            className='w-10 h-10 rounded-xl flex items-center justify-center text-base shrink-0'
+            style={{ background: `${color}15`, border: `1px solid ${color}30` }}
+          >
+            {CATEGORY_EMOJI[item.category] ?? '📦'}
+          </div>
+          <div className='min-w-0 flex-1'>
+            <div className='flex items-center gap-2 flex-wrap'>
+              <span className='font-sans text-sm font-semibold text-[#f0efff] truncate'>
+                {item.title}
+              </span>
+              {isDue && (
+                <span className='flex items-center gap-1 text-[9px] font-mono text-[#ffb830] bg-[rgba(255,184,48,0.1)] border border-[rgba(255,184,48,0.25)] px-1.5 py-0.5 rounded'>
+                  <AlertCircle className='w-2.5 h-2.5' /> Due
                 </span>
-                {isDue && (
-                  <span className='flex items-center gap-1 text-[9px] font-mono text-[#ffb830] bg-[rgba(255,184,48,0.1)] border border-[rgba(255,184,48,0.25)] px-1.5 py-0.5 rounded'>
-                    <AlertCircle className='w-2.5 h-2.5' /> Due
-                  </span>
-                )}
-              </div>
-              <div className='flex items-center gap-2 mt-1 flex-wrap'>
-                <span
-                  className='font-mono text-[9px] px-1.5 py-0.5 rounded'
-                  style={{ background: `${color}18`, color }}
-                >
-                  {item.category}
-                </span>
-                <span
-                  className='font-mono text-[9px] px-1.5 py-0.5 rounded border'
-                  style={{ color: freq.color, borderColor: `${freq.color}40`, background: `${freq.color}10` }}
-                >
-                  {freq.label}
-                </span>
-                <span className='font-mono text-[9px] text-[#4a4870] flex items-center gap-1'>
-                  <Calendar className='w-2.5 h-2.5' />
-                  Next: {item.nextDueDate}
-                </span>
-              </div>
-              {item.notes && (
-                <p className='font-mono text-[10px] text-[#4a4870] mt-1 truncate max-w-[240px]'>
-                  {item.notes}
-                </p>
               )}
             </div>
+            <div className='flex items-center gap-2 mt-1 flex-wrap'>
+              <span
+                className='font-mono text-[9px] px-1.5 py-0.5 rounded'
+                style={{ background: `${color}18`, color }}
+              >
+                {item.category}
+              </span>
+              <span
+                className='font-mono text-[9px] px-1.5 py-0.5 rounded border'
+                style={{ color: freq.color, borderColor: `${freq.color}40`, background: `${freq.color}10` }}
+              >
+                {freq.label}
+              </span>
+              <span className='font-mono text-[9px] text-[#4a4870] flex items-center gap-1'>
+                <Calendar className='w-2.5 h-2.5' />
+                Next: {item.nextDueDate}
+              </span>
+            </div>
+            {item.notes && (
+              <p className='font-mono text-[10px] text-[#4a4870] mt-1 truncate'>
+                {item.notes}
+              </p>
+            )}
           </div>
+        </div>
 
-          {/* Right: amount + controls */}
-          <div className='flex flex-col items-end gap-2 shrink-0'>
-            <div className='font-display text-base font-bold' style={{ color }}>
-              ₹{item.amount.toLocaleString('en-IN')}
-            </div>
-            <div className='flex items-center gap-1.5'>
-              <Switch
-                checked={item.isActive}
-                onCheckedChange={onToggle}
-                className='scale-75'
-              />
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={onEdit}
-                className='w-7 h-7 text-[#8b89b0] hover:text-[#9d7fff] hover:bg-[rgba(124,92,252,0.1)]'
-              >
-                <Pencil className='w-3.5 h-3.5' />
-              </Button>
-              <Button
-                variant='ghost'
-                size='icon'
-                onClick={onDelete}
-                className='w-7 h-7 text-[#8b89b0] hover:text-[#ff6b6b] hover:bg-red-950/20'
-              >
-                <Trash2 className='w-3.5 h-3.5' />
-              </Button>
-            </div>
+        {/* Row 2 — amount on the left, controls on the right with roomier tap targets */}
+        <div className='flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[rgba(124,92,252,0.06)]'>
+          <div className='font-display text-base font-bold' style={{ color }}>
+            ₹{item.amount.toLocaleString('en-IN')}
+          </div>
+          <div className='flex items-center gap-1.5 shrink-0'>
+            <Switch
+              checked={item.isActive}
+              onCheckedChange={onToggle}
+            />
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={onEdit}
+              aria-label='Edit recurring expense'
+              className='w-9 h-9 sm:w-8 sm:h-8 text-[#8b89b0] hover:text-[#9d7fff] hover:bg-[rgba(124,92,252,0.1)]'
+            >
+              <Pencil className='w-4 h-4' />
+            </Button>
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={onDelete}
+              aria-label='Delete recurring expense'
+              className='w-9 h-9 sm:w-8 sm:h-8 text-[#8b89b0] hover:text-[#ff6b6b] hover:bg-red-950/20'
+            >
+              <Trash2 className='w-4 h-4' />
+            </Button>
           </div>
         </div>
       </CardContent>
