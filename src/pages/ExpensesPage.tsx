@@ -464,7 +464,8 @@ function MobileExpenseCard({
       style={{ background: 'rgba(13,13,26,0.7)' }}
     >
       <CardContent className='p-3.5'>
-        <div className='flex items-center gap-3'>
+        {/* Row 1 — icon + title/badges get the full card width so titles stay readable */}
+        <div className='flex items-start gap-3'>
           <div
             className='w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0'
             style={{ background: `${color}15`, border: `1px solid ${color}25` }}
@@ -487,8 +488,9 @@ function MobileExpenseCard({
               </span>
               {/* Merchant badge — NEW */}
               {exp.merchant && (
-                <span className='font-mono text-[9px] text-[#4a4870] flex items-center gap-0.5'>
-                  <Receipt className='w-2.5 h-2.5' /> {exp.merchant}
+                <span className='font-mono text-[9px] text-[#4a4870] flex items-center gap-0.5 min-w-0'>
+                  <Receipt className='w-2.5 h-2.5 shrink-0' />{' '}
+                  <span className='truncate'>{exp.merchant}</span>
                 </span>
               )}
               {/* Tax deductible badge — NEW */}
@@ -506,66 +508,71 @@ function MobileExpenseCard({
               )}
             </div>
           </div>
-          <div className='flex flex-col items-end gap-2 shrink-0'>
-            <div className='text-right'>
-              <span
-                className='font-display text-base font-bold block'
-                style={{ color }}
-              >
+        </div>
+
+        {/* Row 2 — amount on the left, actions on the right with roomier tap targets */}
+        <div className='flex items-center justify-between gap-2 mt-3 pt-3 border-t border-[rgba(124,92,252,0.06)]'>
+          <div className='min-w-0'>
+            <span
+              className='font-display text-base font-bold block truncate'
+              style={{ color }}
+            >
+              {new Intl.NumberFormat(undefined, {
+                style: 'currency',
+                currency: exp.currency ?? homeCurrency,
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 0,
+              }).format(exp.amount)}
+            </span>
+            {isForeign && (
+              <span className='font-mono text-[9px] text-[#4a4870]'>
+                ≈{' '}
                 {new Intl.NumberFormat(undefined, {
                   style: 'currency',
-                  currency: exp.currency ?? homeCurrency,
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 0,
-                }).format(exp.amount)}
+                  currency: homeCurrency,
+                  maximumFractionDigits: 0,
+                }).format(exp.convertedAmount)}
               </span>
-              {isForeign && (
-                <span className='font-mono text-[9px] text-[#4a4870]'>
-                  ≈{' '}
-                  {new Intl.NumberFormat(undefined, {
-                    style: 'currency',
-                    currency: homeCurrency,
-                    maximumFractionDigits: 0,
-                  }).format(exp.convertedAmount)}
-                </span>
-              )}
-            </div>
-            <div className='flex gap-1.5'>
-              <button
-                onClick={() => onAskAi(exp)}
-                className='w-8 h-8 rounded-lg flex items-center justify-center'
-                style={{
-                  background: 'rgba(124,92,252,0.1)',
-                  border: '1px solid rgba(124,92,252,0.2)',
-                  color: '#9d7fff',
-                }}
-                title='Ask AI about this expense'
-              >
-                <MessageSquare className='w-3.5 h-3.5' />
-              </button>
-              <button
-                onClick={() => onEdit(exp)}
-                className='w-8 h-8 rounded-lg flex items-center justify-center'
-                style={{
-                  background: 'rgba(91,143,255,0.1)',
-                  border: '1px solid rgba(91,143,255,0.2)',
-                  color: '#5b8fff',
-                }}
-              >
-                <Edit2 className='w-3.5 h-3.5' />
-              </button>
-              <button
-                onClick={() => onDelete(exp)}
-                className='w-8 h-8 rounded-lg flex items-center justify-center'
-                style={{
-                  background: 'rgba(255,59,92,0.08)',
-                  border: '1px solid rgba(255,59,92,0.2)',
-                  color: '#ff3b5c',
-                }}
-              >
-                <Trash2 className='w-3.5 h-3.5' />
-              </button>
-            </div>
+            )}
+          </div>
+          <div className='flex gap-2 shrink-0'>
+            <button
+              onClick={() => onAskAi(exp)}
+              className='w-9 h-9 rounded-lg flex items-center justify-center'
+              style={{
+                background: 'rgba(124,92,252,0.1)',
+                border: '1px solid rgba(124,92,252,0.2)',
+                color: '#9d7fff',
+              }}
+              title='Ask AI about this expense'
+              aria-label='Ask AI about this expense'
+            >
+              <MessageSquare className='w-4 h-4' />
+            </button>
+            <button
+              onClick={() => onEdit(exp)}
+              className='w-9 h-9 rounded-lg flex items-center justify-center'
+              style={{
+                background: 'rgba(91,143,255,0.1)',
+                border: '1px solid rgba(91,143,255,0.2)',
+                color: '#5b8fff',
+              }}
+              aria-label='Edit expense'
+            >
+              <Edit2 className='w-4 h-4' />
+            </button>
+            <button
+              onClick={() => onDelete(exp)}
+              className='w-9 h-9 rounded-lg flex items-center justify-center'
+              style={{
+                background: 'rgba(255,59,92,0.08)',
+                border: '1px solid rgba(255,59,92,0.2)',
+                color: '#ff3b5c',
+              }}
+              aria-label='Delete expense'
+            >
+              <Trash2 className='w-4 h-4' />
+            </button>
           </div>
         </div>
       </CardContent>
